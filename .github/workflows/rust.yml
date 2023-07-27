@@ -8,6 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  TARGETS: "x86_64-pc-windows-gnu x86_64-unknown-linux-gnu armv7-unknown-linux-gnueabihf aarch64-unknown-linux-gnu"
 
 jobs:
   build:
@@ -16,7 +17,25 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+
+    - name: Install cross-compilation dependencies
+      run: |
+          rustup target add $TARGETS
+          sudo apt install gcc-mingw-w64
+
+    - name: Build - Windows x86_64
+      run: | 
+          cargo build --verbose --release --target x86_64-pc-windows-gnu
+
+    - name: Build - Linux ARMv7
+      run: | 
+          cargo build --verbose --release --target armv7-unknown-linux-gnueabihf
+
+    - name: Build - Linux aarch64
+      run: | 
+          cargo build --verbose --release --target aarch64-unknown-linux-gnu
+
+    - name: Build and test - Linux x86_64
+      run: | 
+          cargo build --verbose --release --target x86_64-unknown-linux-gnu
+          cargo test  --verbose           --target x86_64-unknown-linux-gnu
