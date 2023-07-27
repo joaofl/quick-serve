@@ -1,7 +1,4 @@
-// Copyright © SixtyFPS GmbH <info@slint.dev>
-// SPDX-License-Identifier: MIT
-
-import { LineEdit, Button, ComboBox, GridBox } from "std-widgets.slint";
+import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit} from "std-widgets.slint";
 
 export component AnyServeUI inherits Window {
     // returns true if the string parameter is a valid date
@@ -11,52 +8,44 @@ export component AnyServeUI inherits Window {
     pure callback compare-date(string, string) -> bool;
     compare-date(a, b) => { a <= b }
     private property <bool> message-visible;
+    height: 500px;
     GridBox {
-        combo := ComboBox {
-            row: 0;
-            model: ["one-way flight", "return flight"];
-            current-value: "one-way flight";
-            current-index: 0;
-        }
         t1 := LineEdit {
+            row: 0;
+            text: "/path/to/dir";
+        }
+        gb1 := GridBox {
             row: 1;
-            text: "27.03.2014";
-        }
-        Rectangle {
-            row: 1; // over the previous line edit
-            background: root.validate-date(t1.text) ? transparent : #f008;
-        }
-        t2 := LineEdit {
-            row: 2;
-            text: "27.03.2014";
-            enabled: combo.current-index == 1;
-        }
-        Rectangle {
-            row: 2; // over the previous line edit
-            background: root.validate-date(t2.text) ? transparent : #f008;
+            cbFTP := CheckBox {
+                col: 0;
+                text: "FTP";
+                enabled: true;
+            }
+            CheckBox {
+                col: 1;
+                text: "TFTP";
+                enabled: false;
+            }
+            CheckBox {
+                col: 2;
+                text: "HTTP";
+                enabled: false;
+            }
+            CheckBox {
+                col: 3;
+                text: "DHCP";
+                enabled: false;
+            }
         }
         Button {
+            row: 2;
+            text: "Start";
+            checkable: true;
+            clicked => { te1.text += "Clicked\n"; }
+        }
+        te1 := TextEdit { 
             row: 3;
-            text: "Book";
-            clicked() => { root.message-visible = true; }
-            enabled: combo.current-index != 1 ? root.validate-date(t1.text) : root.compare-date(t1.text, t2.text);
-        }
-    }
-    if (root.message-visible) : Rectangle {
-        width: 100%;
-        height: 100%;
-        background: #ee8;
-        Text {
-            width: 100%;
-            height: 100%;
-            text: "You have booked a " + combo.current-value + " on " + t1.text;
-            vertical-alignment: center;
-            horizontal-alignment: center;
-        }
-        TouchArea {
-            width: 100%;
-            height: 100%;
-            clicked => { root.message-visible = false; }
-        }
+            read-only: true;
+         }
     }
 }
