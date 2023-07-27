@@ -7,7 +7,7 @@ export component AnyServeUI inherits Window {
     // returns true if the first date is before the second date and they are both valid
     pure callback compare-date(string, string) -> bool;
     compare-date(a, b) => { a <= b }
-    private property <bool> message-visible;
+    // private property <bool> message-visible;
     height: 500px;
     GridBox {
         t1 := LineEdit {
@@ -19,7 +19,6 @@ export component AnyServeUI inherits Window {
             cbFTP := CheckBox {
                 col: 0;
                 text: "FTP";
-                enabled: true;
             }
             CheckBox {
                 col: 1;
@@ -37,11 +36,15 @@ export component AnyServeUI inherits Window {
                 enabled: false;
             }
         }
-        Button {
+        btStart := Button {
             row: 2;
             text: "Start";
             checkable: true;
-            clicked => { te1.text += "Clicked\n"; }
+            clicked => { 
+                te1.text += "Clicked\n";
+                cbFTP.enabled = !btStart.checked;
+                t1.enabled = !btStart.checked;
+            }
         }
         te1 := TextEdit { 
             row: 3;
