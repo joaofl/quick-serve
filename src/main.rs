@@ -1,31 +1,43 @@
-// Copyright © SixtyFPS GmbH <info@slint.dev>
-// SPDX-License-Identifier: MIT
+use tokio::try_join;
+use std::path::PathBuf;
+use log::{error, info};
 
 // use chrono::NaiveDate;
-use slint::SharedString;
-
-// use ftp-server
+// use slint::SharedString;
 
 slint::slint!(import { AnyServeUI } from "src/ui.slint";);
 
-pub fn main() {
-    let ui = AnyServeUI::new().unwrap();
-    // ui.on_validate_date(|date: SharedString| {
-    //     NaiveDate::parse_from_str(date.as_str(), "%d.%m.%Y").is_ok()
-    // });
-    // ui.on_compare_date(|date1: SharedString, date2: SharedString| {
-    //     let date1 = match NaiveDate::parse_from_str(date1.as_str(), "%d.%m.%Y") {
-    //         Err(_) => return false,
-    //         Ok(x) => x,
-    //     };
-    //     let date2 = match NaiveDate::parse_from_str(date2.as_str(), "%d.%m.%Y") {
-    //         Err(_) => return false,
-    //         Ok(x) => x,
-    //     };
-    //     date1 <= date2
-    // });
+mod servers {
+    pub mod ftp;
+}
 
-    // ftp-server.start_ftp_server();
+// Below the code for command line parser
+// #[derive(Parser)]
+// #[command(author, version, about, long_about = None)]
+// #[command(next_line_help = true)]
+// struct Cli {
+//     #[arg(long)]
+//     path: String,
+//     port: u32,
+// }
+
+
+#[tokio::main]
+async fn main() {
+    ::std::env::set_var("RUST_LOG", "quick_serve=debug");
+
+    let ui = AnyServeUI::new().unwrap();
+
+    let fut_ftp = servers::ftp::start_ftp_server(PathBuf::from("/tmp/"), 21);
+    let result = try_join!(fut_ftp);
+
+    match result {
+        Ok(s) => info!("result is...\n{:?}", s),
+        Err(e) => error!("There was an error: {:?}", e)
+    };
+
+    // let r_ftp = fut_ftp.await.unwrap();
+    // println!("Result 1: {}", r_ftp);
 
     ui.run().unwrap();
 }
