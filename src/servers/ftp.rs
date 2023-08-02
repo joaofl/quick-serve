@@ -3,14 +3,24 @@ use log::info;
 use std::path::{PathBuf};
 use unftp_sbe_fs::ServerExt;
 
-pub async fn start_ftp_server(path: PathBuf, port: u32) -> Result<(), ServerError> {
-    info!("Starting the FTP server");
+pub struct FTPServer {
+    // server: libunftp::Server,
+    path: PathBuf,
+    port: u32,
+}
 
-    // let ftp_home = std::env::temp_dir();
-    let server = libunftp::Server::with_fs(path).passive_ports(50000..65535);
+impl FTPServer {
 
-    let address = format!("127.0.0.1:{}", port);
+    pub fn new(path: PathBuf, port: u32) -> Self {
+        info!("Starting the FTP server");
+        return FTPServer { path, port };
+    }
 
-    // server.listen(address).await
-    server.listen(address).await
+    pub async fn start(&self) -> Result<(), ServerError> {
+        // let ftp_home = std::env::temp_dir();
+        let server = libunftp::Server::with_fs(self.path.clone()).passive_ports(50000..65535);
+        let address = format!("127.0.0.1:{}", self.port);
+
+        server.listen(address).await
+    }
 }
