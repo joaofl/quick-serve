@@ -1,19 +1,19 @@
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [package]
 name = "any-serve"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 # chrono = { version = "0.4.26", default-features = false, features = ["clock", "std"] }
 
 slint = { version = "1.1.1", default-features = true }
+
 tokio = { version = "1.29.1", features = ["full"]}
+
 libunftp = "0.18.9"
 unftp-sbe-fs = "0.2.2"
 
-# [dev-dependencies]
-# pretty_env_logger = "0.5.0"
 log = "0.4.19"
+env_logger = "0.10.0"
 clap = "4.3.19"
