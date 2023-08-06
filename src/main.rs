@@ -36,8 +36,13 @@ async fn main() {
         Err(e) => error!("There was an error: {:?}", e)
     };
 
-    // let r_ftp = fut_ftp.await.unwrap();
-    // println!("Result 1: {}", r_ftp);
+    ui.on_start_ftp_server(move || {
+        let ftp_server = servers::ftp::FTPServer::new(PathBuf::from("/tmp/"), 2121);
+        // ftp_fut = ftp_server.start();
+        // let ftp_join = tokio::spawn(ftp_fut);
+        // let result = try_join!(ftp_server.start());
+        debug!("Starting.....")
+    });
 
     ui.run().unwrap();
 }
