@@ -7,13 +7,19 @@ export component AnyServeUI inherits Window {
     title: "Anyserve";
     height: 500px;
     GridBox {
-        t1 := LineEdit {
+        GridBox {
             row: 0;
-            text: "~/Public/";
+            t1 := LineEdit {
+                col: 0;
+                text: "~/Public/";
+            }
+            btPath := Button {
+                col: 1;
+                text: "Select";
+            }
         }
-        //TODO: Add a listbox/combo here with the possible interfaces to use. 
-        // Multiple or all poissible
-        // Also the possibility to filter by IP
+        // TODO: Add a listbox/combo here with the possible interfaces to use. Multiple or all poissible
+        // TODO: Add the possibility to filter by IP
         gb1 := GridBox {
             row: 1;
             cbFTP := CheckBox {
