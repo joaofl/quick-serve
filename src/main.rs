@@ -22,9 +22,12 @@ mod servers {
 // }
 
 
-#[tokio::main]
-async fn main() {
-    ::std::env::set_var("RUST_LOG", "quick_serve=debug");
+fn main() {
+    ::std::env::set_var("RUST_LOG", "debug");
+    env_logger::init();
+
+    debug!("Starting my shapp");
+
 
     let ui = AnyServeUI::new().unwrap();
 
