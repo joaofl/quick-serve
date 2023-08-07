@@ -2,6 +2,7 @@ import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit} from "std-wid
 
 export component AnyServeUI inherits Window {
     callback start_ftp_server();
+    callback stop_ftp_server();
     private property <bool> any-checked;
 
     title: "Anyserve";
@@ -79,6 +80,7 @@ export component AnyServeUI inherits Window {
                 }
                 else {
                     te1.text += "Stopped\n";
+                    root.stop_ftp_server()
                 }
                 cbFTP.enabled = !btStart.checked;
                 t1.enabled = !btStart.checked;
