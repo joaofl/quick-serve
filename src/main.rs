@@ -1,5 +1,5 @@
 // Only mind errors for now
-// #![allow(warnings)]
+#![allow(warnings)]
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -10,8 +10,9 @@ slint::slint!(import { AnyServeUI } from "src/ui.slint";);
 mod servers { pub mod ftp; }
 use crate::servers::ftp::FTPServer;
 
+#[tokio::main]
 
-fn main() {
+async fn main() {
     ::std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
@@ -19,16 +20,15 @@ fn main() {
 
     let ui = AnyServeUI::new().unwrap();
 
-    let shared_ftp_server = Arc::new(FTPServer::new(PathBuf::from("/tmp/"), 2121));
-    let ftp_server_c1 = Arc::clone(&shared_ftp_server);
-    let ftp_server_c2 = Arc::clone(&shared_ftp_server);
+    let shared_ftp_server_c0 = Arc::new(FTPServer::new(PathBuf::from("/tmp/"), 2121));
+    let shared_ftp_server_c1 = shared_ftp_server_c0.clone();
 
     ui.on_start_ftp_server(move || {
-        ftp_server_c1.start();
+        shared_ftp_server_c0.start();
     });
     
     ui.on_stop_ftp_server(move || {
-        ftp_server_c2.stop();
+        shared_ftp_server_c1.stop();
     });
 
     ui.run().unwrap();
