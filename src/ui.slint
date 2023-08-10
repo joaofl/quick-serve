@@ -73,14 +73,18 @@ export component AnyServeUI inherits Window {
                         any-checked = true;
                     }
 
-                    if (!any-checked) {
+                    if (any-checked) {
+                        btStart.text = "Stop";
+                    }
+                    else {
                         te1.text += "Nothing to start...\n";
                         btStart.checked = false;
                     }
                 }
                 else {
+                    btStart.text = "Start";
                     te1.text += "Stopped\n";
-                    root.stop_ftp_server()
+                    root.stop_ftp_server();
                 }
                 cbFTP.enabled = !btStart.checked;
                 t1.enabled = !btStart.checked;
