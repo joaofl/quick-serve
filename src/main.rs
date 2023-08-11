@@ -10,8 +10,8 @@ slint::slint!(import { AnyServeUI } from "src/ui.slint";);
 mod servers { pub mod ftp; }
 use crate::servers::ftp::FTPServer;
 
-
-fn main() {
+#[tokio::main]
+async fn main() {
     ::std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
