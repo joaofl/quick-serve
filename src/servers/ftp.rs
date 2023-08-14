@@ -8,6 +8,8 @@ use std::time::Duration;
 
 use tokio::sync::broadcast;
 
+// std::mem::drop;
+
 pub struct FTPServer {
     sender: tokio::sync::broadcast::Sender<bool>,
     path: PathBuf,
@@ -42,7 +44,6 @@ impl FTPServer {
 
         let address = self.address.clone();
         tokio::spawn(async move {
-            println!("Asynchronous task is running");
             let _ = server.listen(address).await;
         });
     }

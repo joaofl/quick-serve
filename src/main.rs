@@ -15,15 +15,20 @@ async fn main() {
     ::std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
-    debug!("Starting my shapp");
-
     let ui = AnyServeUI::new().unwrap();
 
-    let path = PathBuf::from("/tmp/");
+    let p: String = ui.get_te_logs().into();
+    // TODO: validate path here
+
+    let path = PathBuf::from(p);
     let bind_address = format!("127.0.0.1");
 
     let ftp_server = Arc::new(FTPServer::new(path, bind_address, 2121));
     let ftp_server_clone = ftp_server.clone();
+
+    ui.on_select_path(move || {
+        // TODO: path chooser runs here
+    });
 
     ui.on_start_ftp_server(move || {
         info!("Starting the server");

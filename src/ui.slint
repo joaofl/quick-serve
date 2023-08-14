@@ -3,6 +3,10 @@ import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit} from "std-wid
 export component AnyServeUI inherits Window {
     callback start_ftp_server();
     callback stop_ftp_server();
+
+    in-out property <string> le_path <=> lePath.text;
+    in-out property <string> te_logs <=> teLogs.text;
+
     private property <bool> any-checked;
 
     title: "Anyserve";
@@ -10,7 +14,7 @@ export component AnyServeUI inherits Window {
     GridBox {
         GridBox {
             row: 0;
-            t1 := LineEdit {
+            lePath := LineEdit {
                 col: 0;
                 text: "~/Public/";
             }
@@ -19,8 +23,7 @@ export component AnyServeUI inherits Window {
                 text: "Select";
             }
         }
-        // TODO: Add a listbox/combo here with the possible interfaces to use. Multiple or all poissible
-        // TODO: Add the possibility to filter by IP
+        // TODO: Bind address config here?
         gb1 := GridBox {
             row: 1;
             cbFTP := CheckBox {
@@ -53,23 +56,23 @@ export component AnyServeUI inherits Window {
                     any-checked = false;
 
                     if (cbFTP.checked){
-                        te1.text += "Startin FTP server\n";
+                        teLogs.text += "Startin FTP server\n";
                         any-checked = true;
                         root.start_ftp_server()
                     }
 
                     if (cbHTTP.checked){
-                        te1.text += "Startin HTTP server\n";
+                        teLogs.text += "Startin HTTP server\n";
                         any-checked = true;
                     }
 
                     if (cbTFTP.checked){
-                        te1.text += "Startin TFTP server\n";
+                        teLogs.text += "Startin TFTP server\n";
                         any-checked = true;
                     }
 
                     if (cbDHCP.checked){
-                        te1.text += "Startin DHCP server\n";
+                        teLogs.text += "Startin DHCP server\n";
                         any-checked = true;
                     }
 
@@ -77,20 +80,20 @@ export component AnyServeUI inherits Window {
                         btStart.text = "Stop";
                     }
                     else {
-                        te1.text += "Nothing to start...\n";
+                        teLogs.text += "Nothing to start...\n";
                         btStart.checked = false;
                     }
                 }
                 else {
                     btStart.text = "Start";
-                    te1.text += "Stopped\n";
+                    teLogs.text += "Stopped\n";
                     root.stop_ftp_server();
                 }
                 cbFTP.enabled = !btStart.checked;
-                t1.enabled = !btStart.checked;
+                lePath.enabled = !btStart.checked;
             }
         }
-        te1 := TextEdit {
+        teLogs := TextEdit {
             row: 3;
             read-only: true;
          }
