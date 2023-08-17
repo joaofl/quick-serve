@@ -5,27 +5,49 @@ export component AnyServeUI inherits Window {
     callback stop_ftp_server();
 
     in-out property <string> le_path <=> lePath.text;
+    in-out property <string> le_bind_address <=> leBindAddress.text;
     in-out property <string> te_logs <=> teLogs.text;
 
     private property <bool> any-checked;
+    private property <length> labels-width: 35pt;
 
     title: "Anyserve";
     height: 500px;
     GridBox {
-        GridBox {
+        gb1 := GridBox {
             row: 0;
-            lePath := LineEdit {
+            Text {
                 col: 0;
+                width: labels-width;
+                text: "Path";
+                horizontal-alignment: right;
+                vertical-alignment: center;
+            }
+            lePath := LineEdit {
+                col: 1;
                 text: "~/Public/";
             }
             btPath := Button {
-                col: 1;
+                col: 2;
                 text: "Select";
             }
         }
-        // TODO: Bind address config here?
-        gb1 := GridBox {
+        gb2 := GridBox {
             row: 1;
+            Text {
+                col: 0;
+                width: labels-width;
+                text: "Bind\naddress";
+                horizontal-alignment: right;
+                vertical-alignment: center;
+            }
+            leBindAddress := LineEdit {
+                col: 1;
+                text: "127.0.0.1:2121";
+            }
+        }
+        gb3 := GridBox {
+            row: 2;
             cbFTP := CheckBox {
                 col: 0;
                 text: "FTP";
@@ -47,7 +69,7 @@ export component AnyServeUI inherits Window {
             }
         }
         btStart := Button {
-            row: 2;
+            row: 3;
             text: "Start";
             checkable: true;
 
@@ -89,12 +111,15 @@ export component AnyServeUI inherits Window {
                     teLogs.text += "Stopped\n";
                     root.stop_ftp_server();
                 }
+
                 cbFTP.enabled = !btStart.checked;
                 lePath.enabled = !btStart.checked;
+
+                // gb1.enabled = !btStart.checked;
             }
         }
         teLogs := TextEdit {
-            row: 3;
+            row: 4;
             read-only: true;
          }
     }
