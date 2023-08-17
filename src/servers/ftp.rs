@@ -12,27 +12,22 @@ use tokio::sync::broadcast;
 
 pub struct FTPServer {
     sender: tokio::sync::broadcast::Sender<bool>,
-    path: PathBuf,
-    address: String,
 }
 
 impl FTPServer {
-    pub fn new(path: PathBuf, bind_address: String, port: u32) -> Self {
-        let address = format!("{bind_address}:{port}");
+    pub fn new() -> Self {
         let (sender, _) = broadcast::channel(1);
 
         FTPServer {
             sender,
-            path,
-            address,
         }
     }
 
-    pub fn start(&self){
+    pub fn start(&self, path: PathBuf, bind_address: String){
         let mut receiver_stop = self.sender.subscribe();
 
         let server = 
-            Server::with_fs(self.path.clone())
+            Server::with_fs(path.clone())
                 .passive_ports(50000..65535)
                 .metrics()
                 .shutdown_indicator(async move {
@@ -42,9 +37,9 @@ impl FTPServer {
                     options::Shutdown::new().grace_period(Duration::from_secs(10))
         });
 
-        let address = self.address.clone();
+        let bind_address = bind_address.clone();
         tokio::spawn(async move {
-            let _ = server.listen(address).await;
+            let _ = server.listen(bind_address).await;
         });
     }
 
