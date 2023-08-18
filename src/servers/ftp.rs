@@ -1,14 +1,13 @@
 use libunftp::{Server, options};
 
 use unftp_sbe_fs::ServerExt;
-use tracing::info;
+use log::info;
 
 use std::path::PathBuf;
 use std::time::Duration;
 
 use tokio::sync::broadcast;
 
-// std::mem::drop;
 
 pub struct FTPServer {
     sender: tokio::sync::broadcast::Sender<bool>,

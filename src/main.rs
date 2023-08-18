@@ -4,21 +4,31 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use tracing::{info, debug, error};
-use tracing_subscriber::prelude::*;
+use log::{info, debug, error, logger};
+use log::{Level, Metadata, Record, LevelFilter};
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
 use slint::SharedString;
 
 mod servers { pub mod ftp; }
-use crate::servers::ftp::FTPServer;
+use servers::ftp::FTPServer;
 
 mod utils;
-mod subscriber;
+
+mod logger;
+use logger::MyLogger;
+
+use tokio::sync::broadcast;
 
 #[tokio::main]
 async fn main() {
     ::std::env::set_var("RUST_LOG", "debug");
+
+    let (sender, mut receiver) = broadcast::channel(10);
+    let logger = Box::new(MyLogger{sender});
+
+    log::set_boxed_logger(logger).unwrap();
+    log::set_max_level(LevelFilter::Trace); // Set the maximum log level
 
     let ui = AnyServeUI::new().unwrap();
     let ui_weak = ui.as_weak();
@@ -29,11 +39,6 @@ async fn main() {
     let shared_ui = Arc::new(ui);
     let ui = shared_ui.clone();
     let ui_clone = shared_ui.clone();
-    
-    let subscriber = subscriber::MySubscriber::new();
-    let mut receiver = subscriber.sender.subscribe();
-    subscriber.init();
-
 
     // Get logs printed at the text-box upon a log line print
     slint::spawn_local(async move {
