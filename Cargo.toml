@@ -7,19 +7,18 @@ edition = "2021"
 [dependencies]
 
 # TODO: Put only the used features
-slint = { version = "1.1.1", default-features = true }
+slint = { version = "1.1", default-features = true }
 
 # TODO: Put only the used features
-tokio = { version = "1.29.1", features = ["full"]}
+tokio = { version = "1.29", features = ["full"]}
 
-libunftp = "0.18.9"
-unftp-sbe-fs = "0.2.2"
+libunftp = "0.18"
+unftp-sbe-fs = "0.2"
 
-tracing-subscriber = "0.3.17"
-tracing = "0.1.37"
+tracing-subscriber = "0.3"
+tracing = "0.1"
 
-# clap = "4.3.19"
-
+# clap = "4.3"
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
