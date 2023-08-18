@@ -1,7 +1,7 @@
 use libunftp::{Server, options};
 
 use unftp_sbe_fs::ServerExt;
-use log::info;
+use tracing::info;
 
 use std::path::PathBuf;
 use std::time::Duration;
