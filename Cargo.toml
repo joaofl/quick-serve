@@ -5,10 +5,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# chrono = { version = "0.4.26", default-features = false, features = ["clock", "std"] }
 
+# TODO: Put only the used features
 slint = { version = "1.1.1", default-features = true }
 
+# TODO: Put only the used features
 tokio = { version = "1.29.1", features = ["full"]}
 
 libunftp = "0.18.9"
@@ -17,3 +18,10 @@ unftp-sbe-fs = "0.2.2"
 log = "0.4.19"
 env_logger = "0.10.0"
 # clap = "4.3.19"
+
+
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+opt-level = "z"  # Optimize for size.
+lto = true # Link time optimizations
+panic = "abort" # Saves binary size on removing backtrace data on panic
