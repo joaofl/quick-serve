@@ -23,6 +23,8 @@ impl MySubscriber {
         let subscriber = tracing_subscriber::fmt::Subscriber::new();
         let (sender, _) = broadcast::channel(1);
 
+        // tracing::subscriber::set_default(subscriber).expect("Unable to set the default");
+
         Self {
             subscriber,
             sender,
@@ -49,7 +51,9 @@ impl Subscriber for MySubscriber {
 
     fn event(&self, event: &Event<'_>) {
         // Send log text in data channel
-        let _ = self.sender.send(event.metadata().name().to_string());
+        // let _ = self.sender.send(event.metadata().name().to_string());
+        let e = format!("{:?}", event);
+        let _ = self.sender.send(e);
 
 
         self.subscriber.event(event)

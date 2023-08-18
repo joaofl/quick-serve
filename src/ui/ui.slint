@@ -79,23 +79,19 @@ export component AnyServeUI inherits Window {
                     any-checked = false;
 
                     if (cbFTP.checked){
-                        teLogs.text += "Startin FTP server\n";
                         any-checked = true;
                         root.start_ftp_server()
                     }
 
                     if (cbHTTP.checked){
-                        teLogs.text += "Startin HTTP server\n";
                         any-checked = true;
                     }
 
                     if (cbTFTP.checked){
-                        teLogs.text += "Startin TFTP server\n";
                         any-checked = true;
                     }
 
                     if (cbDHCP.checked){
-                        teLogs.text += "Startin DHCP server\n";
                         any-checked = true;
                     }
 
@@ -103,13 +99,11 @@ export component AnyServeUI inherits Window {
                         btStart.text = "Stop";
                     }
                     else {
-                        teLogs.text += "Nothing to start...\n";
                         btStart.checked = false;
                     }
                 }
                 else {
                     btStart.text = "Start";
-                    teLogs.text += "Stopped\n";
                     root.stop_ftp_server();
                 }
 

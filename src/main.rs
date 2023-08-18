@@ -1,5 +1,5 @@
 // Dev-only
-// #![allow(warnings)]
+#![allow(warnings)]
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -8,6 +8,7 @@ use tracing::{info, debug, error};
 use tracing_subscriber::prelude::*;
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
+use slint::SharedString;
 
 mod servers { pub mod ftp; }
 use crate::servers::ftp::FTPServer;
@@ -20,6 +21,7 @@ async fn main() {
     ::std::env::set_var("RUST_LOG", "debug");
 
     let ui = AnyServeUI::new().unwrap();
+    let ui_weak = ui.as_weak();
 
     let ftp_server = Arc::new(FTPServer::new());
     let ftp_server_clone = ftp_server.clone();
@@ -28,25 +30,31 @@ async fn main() {
     let ui = shared_ui.clone();
     let ui_clone = shared_ui.clone();
     
-    // let ui_clone2 = shared_ui.clone();
-    // ui_clone2.set_te_logs(SharedString::from("Whatever \n"));
-
     let subscriber = subscriber::MySubscriber::new();
     let mut receiver = subscriber.sender.subscribe();
     subscriber.init();
 
-    tokio::spawn(async move {
+
+    // Get logs printed at the text-box upon a log line print
+    slint::spawn_local(async move {
         loop {
-            let txt = receiver.recv().await;
-            println!("Event: {}", txt.unwrap());
-            // Not sure how to change the UI from here
-        }
-    });
+            match receiver.recv().await {
+                Ok(text) => {
+                    let t = ui_weak.unwrap().get_te_logs() + &text + "\n";
+                    ui_weak.unwrap().set_te_logs(t);
+                }
+                Err(_) => {
+                    println!("Something went wrong while receiving log message");
+                    continue;
+                }
+            };
+        };
+    }).unwrap();
 
 
     ui.on_start_ftp_server(move || {
+        // Read and validate the bind address
         let bind_address = ui_clone.get_le_bind_address().to_string();
-        
         match utils::validate_ip_port(&bind_address) {
             Ok(()) => debug!("Valid IP:PORT: {:?}", bind_address),
             Err(error) => {
@@ -55,6 +63,7 @@ async fn main() {
             }
         }
 
+        // Read and validate the path to be served
         let path = PathBuf::from(ui_clone.get_le_path().to_string());
         match utils::validate_path(&path) {
             Ok(()) => debug!("Valid path: {:?}", path),
