@@ -1,9 +1,11 @@
 // Dev-only
-#![allow(warnings)]
+// #![allow(warnings)]
 
-use std::{path::PathBuf, str::FromStr};
+use std::path::PathBuf;
 use std::sync::Arc;
-use log::{info, debug, error};
+
+use tracing::{info, debug, error};
+use tracing_subscriber::prelude::*;
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
 
@@ -11,11 +13,11 @@ mod servers { pub mod ftp; }
 use crate::servers::ftp::FTPServer;
 
 mod utils;
+mod subscriber;
 
 #[tokio::main]
 async fn main() {
     ::std::env::set_var("RUST_LOG", "debug");
-    env_logger::init();
 
     let ui = AnyServeUI::new().unwrap();
 
@@ -25,12 +27,21 @@ async fn main() {
     let shared_ui = Arc::new(ui);
     let ui = shared_ui.clone();
     let ui_clone = shared_ui.clone();
+    
+    // let ui_clone2 = shared_ui.clone();
+    // ui_clone2.set_te_logs(SharedString::from("Whatever \n"));
 
+    let subscriber = subscriber::MySubscriber::new();
+    let mut receiver = subscriber.sender.subscribe();
+    subscriber.init();
 
-    // ui.on_select_path(move || {
-    //     todo!("Not there yet")
-    //     // TODO: path chooser runs here
-    // });
+    tokio::spawn(async move {
+        loop {
+            let txt = receiver.recv().await;
+            println!("Event: {}", txt.unwrap());
+            // Not sure how to change the UI from here
+        }
+    });
 
 
     ui.on_start_ftp_server(move || {
