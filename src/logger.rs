@@ -1,4 +1,4 @@
-use log::{Level, LevelFilter, Log, Metadata, Record};
+use log::{Level, Log, Metadata, Record};
 
 pub struct MyLogger {
     pub sender: tokio::sync::broadcast::Sender<String>,

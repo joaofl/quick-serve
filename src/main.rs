@@ -1,24 +1,22 @@
 // Dev-only
-#![allow(warnings)]
+// #![allow(warnings)]
 
 use std::path::PathBuf;
 use std::sync::Arc;
-
-use log::{info, debug, error, logger};
-use log::{Level, Metadata, Record, LevelFilter};
+use tokio::sync::broadcast;
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
-use slint::SharedString;
+
 
 mod servers { pub mod ftp; }
 use servers::ftp::FTPServer;
 
 mod utils;
 
+use log::{info, debug, error, LevelFilter};
 mod logger;
 use logger::MyLogger;
 
-use tokio::sync::broadcast;
 
 #[tokio::main]
 async fn main() {
