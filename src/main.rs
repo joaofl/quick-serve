@@ -5,7 +5,7 @@ use std::{path::PathBuf, str::FromStr};
 use std::sync::Arc;
 use log::{info, debug, error};
 
-slint::slint!(import { AnyServeUI } from "src/ui.slint";);
+slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
 
 mod servers { pub mod ftp; }
 use crate::servers::ftp::FTPServer;
