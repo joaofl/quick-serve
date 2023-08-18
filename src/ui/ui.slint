@@ -12,7 +12,8 @@ export component AnyServeUI inherits Window {
     private property <length> labels-width: 35pt;
 
     title: "Anyserve";
-    height: 500px;
+    height: 680px;
+    width: 500px;
     GridBox {
         gb1 := GridBox {
             row: 0;
@@ -25,7 +26,7 @@ export component AnyServeUI inherits Window {
             }
             lePath := LineEdit {
                 col: 1;
-                text: "~/Public/";
+                text: "/tmp/";
             }
             btPath := Button {
                 col: 2;
