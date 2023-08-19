@@ -1,4 +1,4 @@
-import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit} from "std-widgets.slint";
+import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit, ScrollView, StandardListView } from "std-widgets.slint";
 
 export component AnyServeUI inherits Window {
     callback start_ftp_server();
@@ -6,14 +6,19 @@ export component AnyServeUI inherits Window {
 
     in-out property <string> le_path <=> lePath.text;
     in-out property <string> le_bind_address <=> leBindAddress.text;
+
     in-out property <string> te_logs <=> teLogs.text;
+
+    in-out property <length> te_vh <=> teLogs.viewport-height;
+    in-out property <length> te_h <=> teLogs.height;
+    in-out property <length> te_vy <=> teLogs.viewport-y;
 
     private property <bool> any-checked;
     private property <length> labels-width: 35pt;
 
     title: "Anyserve";
-    height: 680px;
-    width: 500px;
+    preferred-height: 680px;
+    preferred-width: 500px;
     GridBox {
         gb1 := GridBox {
             row: 0;
@@ -68,6 +73,8 @@ export component AnyServeUI inherits Window {
                 text: "DHCP";
                 enabled: false;
             }
+            //Spacer
+            Rectangle {}
         }
         btStart := Button {
             row: 3;
@@ -107,15 +114,15 @@ export component AnyServeUI inherits Window {
                     root.stop_ftp_server();
                 }
 
-                cbFTP.enabled = !btStart.checked;
-                lePath.enabled = !btStart.checked;
-
+                // cbFTP.enabled = !btStart.checked;
+                // lePath.enabled = !btStart.checked;
                 // gb1.enabled = !btStart.checked;
             }
         }
         teLogs := TextEdit {
             row: 4;
             read-only: true;
-         }
+            wrap: no-wrap;
+        }
     }
 }
