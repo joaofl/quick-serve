@@ -1,26 +1,31 @@
-import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit, ScrollView, StandardListView } from "std-widgets.slint";
+import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit, ScrollView, StandardListView , HorizontalBox} from "std-widgets.slint";
 
 export component AnyServeUI inherits Window {
-    callback start_ftp_server();
-    callback stop_ftp_server();
+    callback ss_ftp_server(bool);
 
     in-out property <string> le_path <=> lePath.text;
     in-out property <string> le_bind_address <=> leBindAddress.text;
 
     in-out property <string> te_logs <=> teLogs.text;
 
-    in-out property <length> te_vh <=> teLogs.viewport-height;
-    in-out property <length> te_h <=> teLogs.height;
-    in-out property <length> te_vy <=> teLogs.viewport-y;
+    out property <length> textedit_viewport_height <=> teLogs.viewport-height;
+    out property <length> textedit_height <=> teLogs.height;
+    in-out property <length> textedit_viewport_y <=> teLogs.viewport-y;
 
-    private property <bool> any-checked;
     private property <length> labels-width: 35pt;
+
+    public function is_connected (connected: bool) {
+        lePath.enabled = !connected;
+        btPath.enabled = !connected;
+        leBindAddress.enabled = !connected;
+        btStartFTP.checked = connected;
+    }
 
     title: "Anyserve";
     preferred-height: 680px;
     preferred-width: 500px;
     GridBox {
-        gb1 := GridBox {
+        GridBox {
             row: 0;
             Text {
                 col: 0;
@@ -38,7 +43,7 @@ export component AnyServeUI inherits Window {
                 text: "Select";
             }
         }
-        gb2 := GridBox {
+        GridBox {
             row: 1;
             Text {
                 col: 0;
@@ -52,80 +57,28 @@ export component AnyServeUI inherits Window {
                 text: "127.0.0.1:2121";
             }
         }
-        gb3 := GridBox {
+        GridBox {
             row: 2;
-            cbFTP := CheckBox {
+
+            btStartFTP := Button {
                 col: 0;
-                text: "FTP";
+                width: 120pt;
+                text: "Start FTP";
+                checkable: true;
+
+                clicked => {
+                    root.ss_ftp_server(btStartFTP.checked);
+                    root.is_connected(btStartFTP.checked);
+
+                    if (btStartFTP.checked) { btStartFTP.text = "Stop FTP"; }
+                    else { btStartFTP.text = "Start FTP"; }
+                }
             }
-            cbTFTP := CheckBox {
-                col: 1;
-                text: "TFTP";
-                enabled: false;
-            }
-            cbSFTP := CheckBox {
-                col: 1;
-                text: "SFTP";
-                enabled: false;
-            }
-            cbHTTP := CheckBox {
-                col: 2;
-                text: "HTTP";
-                enabled: false;
-            }
-            cbDHCP := CheckBox {
-                col: 3;
-                text: "DHCP";
-                enabled: false;
-            }
-            //Spacer
             Rectangle {}
         }
-        btStart := Button {
-            row: 3;
-            text: "Start";
-            checkable: true;
 
-            clicked => {
-                if (btStart.checked) {
-                    any-checked = false;
-
-                    if (cbFTP.checked){
-                        any-checked = true;
-                        root.start_ftp_server()
-                    }
-
-                    if (cbHTTP.checked){
-                        any-checked = true;
-                    }
-
-                    if (cbTFTP.checked){
-                        any-checked = true;
-                    }
-
-                    if (cbDHCP.checked){
-                        any-checked = true;
-                    }
-
-                    if (any-checked) {
-                        btStart.text = "Stop";
-                    }
-                    else {
-                        btStart.checked = false;
-                    }
-                }
-                else {
-                    btStart.text = "Start";
-                    root.stop_ftp_server();
-                }
-
-                // cbFTP.enabled = !btStart.checked;
-                // lePath.enabled = !btStart.checked;
-                // gb1.enabled = !btStart.checked;
-            }
-        }
         teLogs := TextEdit {
-            row: 4;
+            row: 3;
             read-only: true;
             wrap: no-wrap;
         }
