@@ -22,7 +22,7 @@ impl FTPServer {
         }
     }
 
-    pub fn start(&self, path: PathBuf, bind_address: String){
+    pub fn start(&self, path: PathBuf, bind_address: String) -> Result<(), String>{
         let mut receiver_stop = self.sender.subscribe();
 
         let server = 
@@ -36,10 +36,15 @@ impl FTPServer {
                     options::Shutdown::new().grace_period(Duration::from_secs(10))
         });
 
+        // TODO: figure out if the server is created and spawn fine, 
+        // and return any error
+        // print!("{:#?}", server);
+
         let bind_address = bind_address.clone();
         tokio::spawn(async move {
             let _ = server.listen(bind_address).await;
         });
+        return Ok(());
     }
 
     pub fn stop(&self){
