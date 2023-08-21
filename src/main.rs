@@ -1,8 +1,9 @@
 // Dev-only
-// #![allow(warnings)]
+#![allow(warnings)]
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use slint::SharedString;
 use tokio::sync::broadcast;
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
@@ -11,7 +12,8 @@ slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
 mod servers { pub mod ftp; }
 use servers::ftp::FTPServer;
 
-mod utils;
+mod utils { pub mod file_dialog; pub mod validation;}
+use utils::{file_dialog, validation};
 
 use log::{info, debug, error, LevelFilter};
 mod logger;
@@ -31,6 +33,7 @@ async fn main() {
     let ui = AnyServeUI::new().unwrap();
     let ui_weak_textedit = ui.as_weak();
     let ui_weak_ftps = ui.as_weak();
+    let ui_weak_opendir = ui.as_weak();
 
     let ftp_server = Arc::new(FTPServer::new());
     let ftp_server_clone = ftp_server.clone();
@@ -63,13 +66,19 @@ async fn main() {
         };
     }).unwrap();
 
+    ui.on_show_open_dialog(move || {
+        let d = utils::file_dialog::show_open_dialog(PathBuf::from("/tmp/"));
+        debug!("Selected {}", d.display());
 
-    ui.on_ss_ftp_server(move |connect| {
+        ui_weak_opendir.unwrap().set_le_path(d.to_str().unwrap().into());
+    });
+
+    ui.on_startstop_ftp_server(move |connect| {
         // Read and validate the bind address
 
         if connect {
             let bind_address = ui_weak_ftps.unwrap().get_le_bind_address().to_string();
-            match utils::validate_ip_port(&bind_address) {
+            match utils::validation::validate_ip_port(&bind_address) {
                 Ok(()) => debug!("Valid IP:PORT: {:?}", bind_address),
                 Err(error) => {
                     error!("Validation error: {}", error);
@@ -80,7 +89,7 @@ async fn main() {
     
             // Read and validate the path to be served
             let path = PathBuf::from(ui_weak_ftps.unwrap().get_le_path().to_string());
-            match utils::validate_path(&path) {
+            match utils::validation::validate_path(&path) {
                 Ok(()) => debug!("Valid path: {:?}", path),
                 Err(error) => {
                     error!("Validation error: {}", error);

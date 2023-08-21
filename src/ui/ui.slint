@@ -1,7 +1,9 @@
 import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit, ScrollView, StandardListView , HorizontalBox} from "std-widgets.slint";
 
 export component AnyServeUI inherits Window {
-    callback ss_ftp_server(bool);
+    callback startstop_ftp_server(bool);
+    callback show-open-dialog;
+
 
     in-out property <string> le_path <=> lePath.text;
     in-out property <string> le_bind_address <=> leBindAddress.text;
@@ -31,6 +33,7 @@ export component AnyServeUI inherits Window {
                 col: 0;
                 width: labels-width;
                 text: "Path";
+                font-weight: 10;
                 horizontal-alignment: right;
                 vertical-alignment: center;
             }
@@ -40,7 +43,8 @@ export component AnyServeUI inherits Window {
             }
             btPath := Button {
                 col: 2;
-                text: "Select";
+                text: "📂";
+                clicked => { root.show-open-dialog(); }
             }
         }
         GridBox {
@@ -67,7 +71,7 @@ export component AnyServeUI inherits Window {
                 checkable: true;
 
                 clicked => {
-                    root.ss_ftp_server(btStartFTP.checked);
+                    root.startstop_ftp_server(btStartFTP.checked);
                     root.is_connected(btStartFTP.checked);
 
                     if (btStartFTP.checked) { btStartFTP.text = "Stop FTP"; }
