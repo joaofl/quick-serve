@@ -1,10 +1,11 @@
 [![Rust](https://github.com/joaofl/any-serve/actions/workflows/rust.yml/badge.svg)](https://github.com/joaofl/any-serve/actions/workflows/rust.yml)
 
 # Anyserve
-No setup, multi-platform, multi-protocol server for developers or whoever whats to quickly server some files.
+No setup, multi-platform, multi-protocol, standalone server for developers or whoever whats to quickly server some files.
+The swiss-knife of file serving for developers.
 
 
-## Roadmap
+## Whishlist
 
 - [x] FTP 
 - [ ] TFTP 

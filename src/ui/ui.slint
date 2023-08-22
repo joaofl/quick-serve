@@ -10,10 +10,6 @@ export component AnyServeUI inherits Window {
 
     in-out property <string> te_logs <=> teLogs.text;
 
-    out property <length> textedit_viewport_height <=> teLogs.viewport-height;
-    out property <length> textedit_height <=> teLogs.height;
-    in-out property <length> textedit_viewport_y <=> teLogs.viewport-y;
-
     private property <length> labels-width: 35pt;
 
     public function is_connected (connected: bool) {
@@ -21,6 +17,23 @@ export component AnyServeUI inherits Window {
         btPath.enabled = !connected;
         leBindAddress.enabled = !connected;
         btStartFTP.checked = connected;
+    }
+
+    private property <length> pos;
+    private property <length> new_pos;
+
+    public function is_glued() -> bool {
+        pos = (teLogs.viewport-height + 38.0px - teLogs.height) * -1.0;
+        if (teLogs.viewport_y == pos) {
+            return true;
+        }
+        return false;
+    }
+
+    public function textedit_scroll_to_end () {
+        // TODO: make sure this "frame-margin" = 38 is true for all the OSs. Maybe calculate it in the begining
+        new_pos = (teLogs.viewport-height + 38.0px - teLogs.height) * -1.0;
+        teLogs.viewport_y = new_pos;
     }
 
     title: "Anyserve";
