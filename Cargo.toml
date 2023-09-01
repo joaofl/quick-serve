@@ -10,16 +10,18 @@ edition = "2021"
 slint = { version = "1.1", default-features = true }
 
 # TODO: Put only the used features
-tokio = { version = "1.29", features = ["full"]}
+tokio = { version = "1.32", features = ["full"]}
 
 libunftp = "0.18"
 unftp-sbe-fs = "0.2"
 
 log = "0.4"
 env_logger = "0.10"
-chrono = "0.4.26"
-rfd = "0.11.4"
 
+# Required by the file dialog
+rfd = "0.11"
+
+# For the headless version
 # clap = "4.3"
 
 [profile.release]

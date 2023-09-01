@@ -16,6 +16,7 @@ The swiss-knife of file serving for developers.
 - [ ] Show transfer rate (per protocol?)
 - [ ] Show color-codes for the logs to distinguish between protocols
 - [ ] Have a filter to the log levels and sources
+- [ ] Headless version
 
 ## Compiling (tested on Ubuntu 22.04 and Fedora 19)
 
