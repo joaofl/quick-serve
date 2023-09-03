@@ -1,4 +1,5 @@
-import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit, ScrollView, StandardListView , HorizontalBox} from "std-widgets.slint";
+import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit, 
+    ScrollView, StandardListView , HorizontalBox, SpinBox} from "std-widgets.slint";
 
 export component AnyServeUI inherits Window {
     callback startstop_ftp_server(bool);
@@ -23,6 +24,7 @@ export component AnyServeUI inherits Window {
     private property <length> new_pos;
 
     public function is_glued() -> bool {
+        // TODO: not working well
         pos = (teLogs.viewport-height + 38.0px - teLogs.height) * -1.0;
         if (teLogs.viewport_y == pos) {
             return true;
@@ -36,7 +38,7 @@ export component AnyServeUI inherits Window {
         teLogs.viewport_y = new_pos;
     }
 
-    title: "Anyserve";
+    title: "Any-serve";
     preferred-height: 680px;
     preferred-width: 500px;
     GridBox {
@@ -79,7 +81,7 @@ export component AnyServeUI inherits Window {
 
             btStartFTP := Button {
                 col: 0;
-                width: 120pt;
+                width: 100pt;
                 text: "Start FTP";
                 checkable: true;
 
@@ -90,6 +92,15 @@ export component AnyServeUI inherits Window {
                     if (btStartFTP.checked) { btStartFTP.text = "Stop FTP"; }
                     else { btStartFTP.text = "Start FTP"; }
                 }
+            }
+            SpinBox {
+                col: 1;
+                // vertical-stretch: 0;
+                width: 80pt;
+                maximum: 65000;
+                minimum: 20;
+                value: 2121;
+                // enabled: GallerySettings.widgets-enabled;
             }
             Rectangle {}
         }
