@@ -62,6 +62,28 @@ async fn main() {
         };
     }).unwrap();
 
+
+    //
+    // Spawn task along with its local clones
+    let ui_weak = ui.as_weak();
+    let ftp_server_c = ftp_server.clone();
+
+    slint::spawn_local(async move {
+        loop {
+            match ftp_server_c.check().await {
+                Ok(msg) => {
+                    info!("#{}", msg)
+                }
+                Err(msg) => {
+                    ftp_server_c.stop();
+                    ui_weak.unwrap().invoke_is_connected(false);
+                    error!("#{}", msg)
+                }
+            }
+        }
+    }).expect("Failed to spawn FTP status checker");
+
+
     ui.on_show_open_dialog(move || {
         let d = utils::file_dialog::show_open_dialog(PathBuf::from("/tmp/"));
         debug!("Selected {}", d.display());

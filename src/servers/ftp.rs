@@ -41,10 +41,25 @@ impl FTPServer {
         // print!("{:#?}", server);
 
         let bind_address = bind_address.clone();
+        let status_sender_c1 = self.status_sender.clone();
+
         tokio::spawn(async move {
-            let _ = server.listen(bind_address).await;
+            match server.listen(bind_address).await {
+                Ok(()) => { 
+                    let _ = status_sender_c1.send(Ok("Successfully finished".to_string())); 
+                }
+                Err(e) => {
+                    let _ = status_sender_c1.send(Err(format!("Error starting the server {}", e.to_string())));
+                }
+            };
         });
-        return Ok(());
+        // return;
+    }
+
+    pub async fn check(&self) -> Result<String, String> {
+        // Get notified about the server's spawned task
+        let mut status_receiver = self.status_sender.subscribe();
+        return status_receiver.recv().await.unwrap();
     }
 
     pub fn stop(&self){
