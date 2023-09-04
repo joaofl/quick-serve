@@ -1,17 +1,19 @@
 // Dev-only
 // #![allow(warnings)]
 
+slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
+
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
-slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
+mod servers;
+use servers::FTPServer;
+use servers::HTTPServer;
 
-
-mod servers { pub mod ftp; }
-use servers::ftp::FTPServer;
-
-mod utils { pub mod file_dialog; pub mod validation;}
+mod utils;
+use utils::file_dialog;
+use utils::validation;
 
 use log::{info, debug, error, LevelFilter};
 mod logger;
