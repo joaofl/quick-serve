@@ -1,4 +1,3 @@
-// Dev-only
 // #![allow(warnings)]
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
@@ -115,10 +114,36 @@ async fn main() {
         else {
             info!("Stopping FTP server");
             ftp_server_c.stop();
-            ui_weak.unwrap().invoke_is_connected(false);
-            return;
+            // ui_weak.unwrap().invoke_is_connected(false);
         }
+    });
 
+
+    // let mut http_server = HTTPServer::new();
+    let http_server_shared = Arc::new(HTTPServer::new());
+    let http_server_c1 = http_server_shared.clone();
+    let http_server_c2 = http_server_shared.clone();
+
+    tokio::spawn(async move {
+        http_server_c2.runner().await;
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_startstop_http_server(move | connect | {
+        match connect {
+            true => {
+                info!("Starting HTTP server");
+                let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
+                let port = ui_weak.unwrap().get_sb_http_port();
+                let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
+    
+                http_server_c1.start(path, bind_address, port);
+            }
+            false => {
+                info!("Stopping HTTP server");
+                http_server_c1.stop();
+            }
+        }
     });
 
     //Start UI

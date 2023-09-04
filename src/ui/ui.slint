@@ -10,6 +10,7 @@ export component AnyServeUI inherits Window {
     in-out property <string> le_path <=> lePath.text;
     in-out property <string> le_bind_address <=> leBindAddress.text;
     in-out property <int> sb_ftp_port <=> sbFTPPort.value;
+    in-out property <int> sb_http_port <=> sbHTTPPort.value;
 
     in-out property <string> te_logs <=> teLogs.text;
 
@@ -41,8 +42,12 @@ export component AnyServeUI inherits Window {
     }
 
     title: "Any-serve";
-    preferred-height: 680px;
-    preferred-width: 500px;
+    preferred-height: 800px;
+    min-height: 600px;
+
+    preferred-width: 600px;
+    min-width: 500px;
+
     GridBox {
         GridBox {
             row: 0;
@@ -69,6 +74,7 @@ export component AnyServeUI inherits Window {
             Text {
                 col: 0;
                 width: labels-width;
+                // font-weight: 20;
                 text: "Bind\naddress";
                 horizontal-alignment: right;
                 vertical-alignment: center;
@@ -84,24 +90,40 @@ export component AnyServeUI inherits Window {
             btStartFTP := Button {
                 col: 0;
                 width: 100pt;
-                text: "Start FTP";
+                text: "FTP";
                 checkable: true;
 
                 clicked => {
                     root.startstop_ftp_server(btStartFTP.checked);
-                    root.is_connected(btStartFTP.checked);
-
-                    if (btStartFTP.checked) { btStartFTP.text = "Stop FTP"; }
-                    else { btStartFTP.text = "Start FTP"; }
                 }
             }
-            SpinBox {
+            sbFTPPort := SpinBox {
                 col: 1;
                 // vertical-stretch: 0;
                 width: 80pt;
                 maximum: 65000;
                 minimum: 20;
                 value: 2121;
+                // enabled: GallerySettings.widgets-enabled;
+            }
+            //
+            btStartHTTP := Button {
+                col: 2;
+                width: 100pt;
+                text: "HTTP";
+                checkable: true;
+
+                clicked => {
+                    root.startstop_http_server(btStartHTTP.checked);
+                }
+            }
+            sbHTTPPort := SpinBox {
+                col: 3;
+                // vertical-stretch: 0;
+                width: 80pt;
+                maximum: 65000;
+                minimum: 20;
+                value: 8080;
                 // enabled: GallerySettings.widgets-enabled;
             }
             Rectangle {}
