@@ -1,4 +1,7 @@
-[![Rust](https://github.com/joaofl/any-serve/actions/workflows/rust.yml/badge.svg)](https://github.com/joaofl/any-serve/actions/workflows/rust.yml)
+[![Build Status](https://github.com/joaofl/any-serve/actions/workflows/rust.yml/badge.svg)](https://github.com/joaofl/any-serve/actions/workflows/rust.yml)
+![](https://tokei.rs/b1/github/joaofl/any-serve?category=code)
+[![](https://deps.rs/repo/github/joaofl/any-serve/status.svg)](https://deps.rs/repo/github/joaofl/any-serve)
+
 
 # Anyserve
 No setup, multi-platform, multi-protocol, standalone server for developers or whoever whats to quickly server some files.
