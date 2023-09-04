@@ -107,7 +107,7 @@ async fn main() {
             let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
     
             info!("Starting FTP server");
-            ftp_server.start(path, bind_address, port);
+            let _ = ftp_server.start(path, bind_address, port);
             // All the above calls are non-blocking code, whereas the status
             // is received as messages asynchronously.
         }
@@ -118,14 +118,12 @@ async fn main() {
         }
     });
 
-
-    // let mut http_server = HTTPServer::new();
-    let http_server_shared = Arc::new(HTTPServer::new());
-    let http_server_c1 = http_server_shared.clone();
-    let http_server_c2 = http_server_shared.clone();
+    // HTTP server starts here
+    let http_server = Arc::new(HTTPServer::new());
+    let http_server_c = http_server.clone();
 
     tokio::spawn(async move {
-        http_server_c2.runner().await;
+        http_server_c.runner().await;
     });
 
     let ui_weak = ui.as_weak();
@@ -137,11 +135,11 @@ async fn main() {
                 let port = ui_weak.unwrap().get_sb_http_port();
                 let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
     
-                http_server_c1.start(path, bind_address, port);
+                http_server.start(path, bind_address, port);
             }
             false => {
                 info!("Stopping HTTP server");
-                http_server_c1.stop();
+                http_server.stop();
             }
         }
     });
