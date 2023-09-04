@@ -8,8 +8,7 @@ use std::time::Duration;
 
 use tokio::sync::broadcast;
 
-// mod utils;
-// use utils::validation;
+use crate::utils::validation;
 
 pub struct FTPServer {
     stop_sender: tokio::sync::broadcast::Sender<bool>,
@@ -28,28 +27,12 @@ impl FTPServer {
         }
     }
 
-    pub fn start(&self, path: PathBuf, bind_address: String, port: i32) {
+    pub fn start(&self, path: PathBuf, bind_address: String, port: i32) -> Result<(), String> {
         let mut receiver_stop = self.stop_sender.subscribe();
 
-
-        // match utils::validation::validate_ip_port(&bind_address) {
-        //     Ok(()) => debug!("Valid IP:PORT: {:?}", bind_address),
-        //     Err(error) => {
-        //         error!("Validation error: {}", error);
-        //         ui_weak.unwrap().invoke_is_connected(false);
-        //         return;
-        //     }
-        // }
-
-        // // Read and validate the dir path to be served
-        // match utils::validation::validate_path(&path) {
-        //     Ok(()) => debug!("Valid path: {:?}", path),
-        //     Err(error) => {
-        //         error!("Validation error: {}", error);
-        //         ui_weak.unwrap().invoke_is_connected(false);
-        //         return;
-        //     }
-        // }
+        let full_address = format!("{}:{}", bind_address, port);
+        validation::validate_ip_port(&full_address).expect("A");
+        validation::validate_path(&path).expect("B");
 
         let server = 
             Server::with_fs(path.clone())
@@ -61,21 +44,21 @@ impl FTPServer {
                     options::Shutdown::new().grace_period(Duration::from_secs(10))
         });
 
-        let full_address = format!("{}:{}", bind_address, port);
-        let status_sender_c1 = self.status_sender.clone();
+        let status_sender_c = self.status_sender.clone();
 
         tokio::spawn(async move {
             info!("Connecting in the background to: {}", full_address);
             match server.listen(full_address).await {
                 Ok(()) => { 
-                    let _ = status_sender_c1.send(Ok("Successfully finished".to_string())); 
+                    let _ = status_sender_c.send(Ok("Successfully finished".to_string())); 
                 }
                 Err(e) => {
-                    let _ = status_sender_c1.send(Err(format!("Error starting the server {}", e.to_string())));
+                    let _ = status_sender_c.send(Err(format!("Error starting the server {}", e.to_string())));
                 }
             };
         });
-        // return;
+
+        return Ok(());
     }
 
     pub async fn check(&self) -> Result<String, String> {
