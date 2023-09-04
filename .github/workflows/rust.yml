@@ -5,6 +5,8 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  # schedule:
+  #   - cron: '0 0 * * *'
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,30 +18,50 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3
 
-    - name: Install cross-compilation dependencies
+    ##################################
+    # - name: Cache Rust dependencies
+    #   uses: actions/cache@v2
+    #   with:
+    #     path: |
+    #       ~/.cargo/registry
+    #       ~/.cargo/git
+    #       target
+
+    ###################################
+    - name: Setup for Linux x86_64
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+
+    - name: Install build dependencies
       run: |
+          sudo apt install libgtk-3-dev libatk1.0-dev
           rustup target add $TARGETS
-          sudo apt install gcc-mingw-w64 libgtk-3-dev
 
-    - name: Build - Windows x86_64
+    - name: Build for Linux x86_64
       continue-on-error: false
-      run: | 
-          cargo build --verbose --release --target x86_64-pc-windows-gnu
+      run: cargo build --release
 
-    - name: Build - Linux ARMv7
-      continue-on-error: false
-      run: | 
-          cargo build --verbose --release --target armv7-unknown-linux-gnueabihf
+    # ################################### 
+    # - name: Set up Rust for ARM
+    #   uses: actions-rs/toolchain@v1
+    #   with:
+    #     profile: minimal
+    #     toolchain: stable-armv7-unknown-linux-gnueabihf
 
-    - name: Build - Linux aarch64
-      continue-on-error: false
-      run: | 
-          cargo build --verbose --release --target aarch64-unknown-linux-gnu
+    # - name: Build for ARM
+    #   run: cargo build --release --target=armv7-unknown-linux-gnueabihf
 
-    - name: Build and test - Linux x86_64
-      continue-on-error: false
-      run: | 
-          cargo build --verbose --release --target x86_64-unknown-linux-gnu
-          cargo test  --verbose           --target x86_64-unknown-linux-gnu
+    # ################################### 
+    # - name: Set up Rust for Windows
+    #   uses: actions-rs/toolchain@v1
+    #   with:
+    #     profile: minimal
+    #     toolchain: stable-x86_64-pc-windows-msvc
+
+    # - name: Build for Windows
+    #   run: cargo build --release --target=x86_64-pc-windows-msvc
