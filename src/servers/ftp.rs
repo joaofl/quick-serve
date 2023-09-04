@@ -8,6 +8,8 @@ use std::time::Duration;
 
 use tokio::sync::broadcast;
 
+// mod utils;
+// use utils::validation;
 
 pub struct FTPServer {
     stop_sender: tokio::sync::broadcast::Sender<bool>,
@@ -28,6 +30,26 @@ impl FTPServer {
 
     pub fn start(&self, path: PathBuf, bind_address: String, port: i32) {
         let mut receiver_stop = self.stop_sender.subscribe();
+
+
+        // match utils::validation::validate_ip_port(&bind_address) {
+        //     Ok(()) => debug!("Valid IP:PORT: {:?}", bind_address),
+        //     Err(error) => {
+        //         error!("Validation error: {}", error);
+        //         ui_weak.unwrap().invoke_is_connected(false);
+        //         return;
+        //     }
+        // }
+
+        // // Read and validate the dir path to be served
+        // match utils::validation::validate_path(&path) {
+        //     Ok(()) => debug!("Valid path: {:?}", path),
+        //     Err(error) => {
+        //         error!("Validation error: {}", error);
+        //         ui_weak.unwrap().invoke_is_connected(false);
+        //         return;
+        //     }
+        // }
 
         let server = 
             Server::with_fs(path.clone())

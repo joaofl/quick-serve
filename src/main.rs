@@ -12,8 +12,6 @@ use servers::FTPServer;
 use servers::HTTPServer;
 
 mod utils;
-use utils::file_dialog;
-use utils::validation;
 
 use log::{info, debug, error, LevelFilter};
 mod logger;
@@ -108,14 +106,6 @@ async fn main() {
             let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
             let port = ui_weak.unwrap().get_sb_ftp_port();
             let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
-            match utils::validation::validate_path(&path) {
-                Ok(()) => debug!("Valid path: {:?}", path),
-                Err(error) => {
-                    error!("Validation error: {}", error);
-                    ui_weak.unwrap().invoke_is_connected(false);
-                    return;
-                }
-            }
     
             info!("Starting FTP server");
             ftp_server.start(path, bind_address, port);
