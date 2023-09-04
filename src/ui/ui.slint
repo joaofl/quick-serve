@@ -6,11 +6,10 @@ export component AnyServeUI inherits Window {
     callback startstop_http_server(bool);
     callback show-open-dialog;
 
-
     in-out property <string> le_path <=> lePath.text;
     in-out property <string> le_bind_address <=> leBindAddress.text;
-    in-out property <int> sb_ftp_port <=> sbFTPPort.value;
-    in-out property <int> sb_http_port <=> sbHTTPPort.value;
+    out property <int> sb_ftp_port <=> sbFTPPort.value;
+    out property <int> sb_http_port <=> sbHTTPPort.value;
 
     in-out property <string> te_logs <=> teLogs.text;
 
