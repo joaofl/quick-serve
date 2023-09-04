@@ -106,15 +106,7 @@ async fn main() {
             // Read and validate the bind address
             // Get IP and port: TODO
             let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
-            match utils::validation::validate_ip_port(&bind_address) {
-                Ok(()) => debug!("Valid IP:PORT: {:?}", bind_address),
-                Err(error) => {
-                    error!("Validation error: {}", error);
-                    ui_weak.unwrap().invoke_is_connected(false);
-                    return;
-                }
-            }
-            // Read and validate the dir path to be served
+            let port = ui_weak.unwrap().get_sb_ftp_port();
             let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
             match utils::validation::validate_path(&path) {
                 Ok(()) => debug!("Valid path: {:?}", path),
@@ -126,7 +118,7 @@ async fn main() {
             }
     
             info!("Starting FTP server");
-            ftp_server.start(path, bind_address);
+            ftp_server.start(path, bind_address, port);
             // All the above calls are non-blocking code, whereas the status
             // is received as messages asynchronously.
         }

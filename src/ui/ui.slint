@@ -3,11 +3,13 @@ import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit,
 
 export component AnyServeUI inherits Window {
     callback startstop_ftp_server(bool);
+    callback startstop_http_server(bool);
     callback show-open-dialog;
 
 
     in-out property <string> le_path <=> lePath.text;
     in-out property <string> le_bind_address <=> leBindAddress.text;
+    in-out property <int> sb_ftp_port <=> sbFTPPort.value;
 
     in-out property <string> te_logs <=> teLogs.text;
 
@@ -73,7 +75,7 @@ export component AnyServeUI inherits Window {
             }
             leBindAddress := LineEdit {
                 col: 1;
-                text: "127.0.0.1:2121";
+                text: "127.0.0.1";
             }
         }
         GridBox {

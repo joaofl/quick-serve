@@ -1,5 +1,6 @@
 use libunftp::{Server, options};
 
+use log::info;
 use unftp_sbe_fs::ServerExt;
 
 use std::path::PathBuf;
@@ -9,24 +10,24 @@ use tokio::sync::broadcast;
 
 
 pub struct FTPServer {
-    sender: tokio::sync::broadcast::Sender<bool>,
+    stop_sender: tokio::sync::broadcast::Sender<bool>,
     status_sender: tokio::sync::broadcast::Sender<Result<String, String>>,
 }
 
 impl FTPServer {
     pub fn new() -> Self {
-        let (sender, _) = broadcast::channel(1);
+        let (stop_sender, _) = broadcast::channel(1);
 
         let (status_sender, _) = broadcast::channel(1);
 
         FTPServer {
-            sender,
+            stop_sender,
             status_sender,
         }
     }
 
-    pub fn start(&self, path: PathBuf, bind_address: String) {
-        let mut receiver_stop = self.sender.subscribe();
+    pub fn start(&self, path: PathBuf, bind_address: String, port: i32) {
+        let mut receiver_stop = self.stop_sender.subscribe();
 
         let server = 
             Server::with_fs(path.clone())
@@ -38,11 +39,12 @@ impl FTPServer {
                     options::Shutdown::new().grace_period(Duration::from_secs(10))
         });
 
-        let bind_address = bind_address.clone();
+        let full_address = format!("{}:{}", bind_address, port);
         let status_sender_c1 = self.status_sender.clone();
 
         tokio::spawn(async move {
-            match server.listen(bind_address).await {
+            info!("Connecting in the background to: {}", full_address);
+            match server.listen(full_address).await {
                 Ok(()) => { 
                     let _ = status_sender_c1.send(Ok("Successfully finished".to_string())); 
                 }
@@ -61,7 +63,7 @@ impl FTPServer {
     }
 
     pub fn stop(&self){
-        let _ = self.sender.send(false);
+        let _ = self.stop_sender.send(false);
     }
 
 }
