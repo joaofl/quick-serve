@@ -11,10 +11,10 @@ The swiss-knife of file serving for developers.
 ## Whishlist
 
 - [x] FTP 
+- [x] HTTP
 - [ ] TFTP 
 - [ ] SFTP 
 - [ ] DHCP 
-- [ ] HTTP(s)
 - [x] Add "Folder chooser" dialog
 - [ ] Show transfer rate (per protocol?)
 - [ ] Show color-codes for the logs to distinguish between protocols
