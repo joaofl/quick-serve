@@ -39,8 +39,10 @@ async fn main() {
         loop {
             match receiver.recv().await {
                 Ok(log_line) => {
-                    let t = format!("{}\n{}", ui_weak.unwrap().get_te_logs(), &log_line);
-                    ui_weak.unwrap().set_te_logs(t.into());
+                    
+                    // TODO: it seems that there is a massive overhead because of the two lines below
+                    // let t = format!("{}\n{}", ui_weak.unwrap().get_te_logs(), &log_line);
+                    // ui_weak.unwrap().set_te_logs(t.into());
 
                     //Check if currently scrolled to bottom
                     // let is_glued = ui_weak.unwrap().invoke_is_glued();
