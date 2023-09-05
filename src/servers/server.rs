@@ -3,7 +3,7 @@ use log::info;
 use tokio::sync::broadcast;
 
 pub struct Server {
-    command_sender: tokio::sync::broadcast::Sender<(bool, PathBuf, String, i32)>,
+    command_sender: broadcast::Sender<(bool, PathBuf, String, i32)>,
 }
 
 impl Server {
