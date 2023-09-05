@@ -1,17 +1,16 @@
 use std::path::PathBuf;
-
 use log::info;
 use tokio::sync::broadcast;
 
-pub struct HTTPServer {
+pub struct Server {
     command_sender: tokio::sync::broadcast::Sender<(bool, PathBuf, String, i32)>,
 }
 
-impl HTTPServer {
+impl Server {
     pub fn new() -> Self {
         let (command_sender, _) = broadcast::channel(1);
 
-        HTTPServer {
+        Server {
             command_sender,
         }
     }
