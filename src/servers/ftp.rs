@@ -53,7 +53,7 @@ impl FTPServer {
                     let _ = status_sender_c.send(Ok("Successfully finished".to_string())); 
                 }
                 Err(e) => {
-                    let _ = status_sender_c.send(Err(format!("Error starting the server {}", e.to_string())));
+                    let _ = status_sender_c.send(Err(format!("Error starting the server {:?}", e)));
                 }
             };
         });

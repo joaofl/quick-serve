@@ -132,7 +132,7 @@ async fn main() {
             true => {
                 info!("Starting HTTP server");
                 let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
-                let port = ui_weak.unwrap().get_sb_http_port();
+                let port = ui_weak.unwrap().get_sb_http_port() as u16;
                 let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
     
                 http_server.start(path, bind_address, port);
