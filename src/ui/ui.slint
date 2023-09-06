@@ -1,5 +1,7 @@
-import { LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit, 
-    ScrollView, StandardListView , HorizontalBox, SpinBox} from "std-widgets.slint";
+import { 
+    LineEdit, Button, ComboBox, GridBox , CheckBox, TextEdit, 
+    ScrollView, StandardListView , HorizontalBox, SpinBox
+} from "std-widgets.slint";
 
 export component AnyServeUI inherits Window {
     callback startstop_ftp_server(bool);
@@ -11,9 +13,9 @@ export component AnyServeUI inherits Window {
     out property <int> sb_ftp_port <=> sbFTPPort.value;
     out property <int> sb_http_port <=> sbHTTPPort.value;
 
-    in-out property <string> te_logs <=> teLogs.text;
+    // in-out property <string> te_logs <=> teLogs.text;
 
-    private property <length> labels-width: 35pt;
+    private property <length> labels-width: 35px;
 
     public function is_connected (connected: bool) {
         lePath.enabled = !connected;
@@ -41,11 +43,13 @@ export component AnyServeUI inherits Window {
     }
 
     title: "Any-serve";
-    preferred-height: 800px;
-    min-height: 600px;
+    icon: @image-url("icons8-serve-64.png");
 
-    preferred-width: 600px;
-    min-width: 500px;
+    preferred-height: 810px;
+    min-height: 800px;
+
+    preferred-width: 610px;
+    min-width: 300px;
 
     GridBox {
         GridBox {
@@ -54,7 +58,7 @@ export component AnyServeUI inherits Window {
                 col: 0;
                 width: labels-width;
                 text: "Path";
-                font-weight: 10;
+                font-weight: 600; // From 100 to 900, 400 by default
                 horizontal-alignment: right;
                 vertical-alignment: center;
             }
@@ -73,7 +77,7 @@ export component AnyServeUI inherits Window {
             Text {
                 col: 0;
                 width: labels-width;
-                // font-weight: 20;
+                font-weight: 600;
                 text: "Bind\naddress";
                 horizontal-alignment: right;
                 vertical-alignment: center;
@@ -88,7 +92,7 @@ export component AnyServeUI inherits Window {
 
             btStartFTP := Button {
                 col: 0;
-                width: 100pt;
+                width: 80px;
                 text: "FTP";
                 checkable: true;
 
@@ -99,7 +103,7 @@ export component AnyServeUI inherits Window {
             sbFTPPort := SpinBox {
                 col: 1;
                 // vertical-stretch: 0;
-                width: 80pt;
+                width: 120px;
                 maximum: 65000;
                 minimum: 20;
                 value: 2121;
@@ -108,7 +112,7 @@ export component AnyServeUI inherits Window {
             //
             btStartHTTP := Button {
                 col: 2;
-                width: 100pt;
+                width: 80px;
                 text: "HTTP";
                 checkable: true;
 
@@ -119,7 +123,7 @@ export component AnyServeUI inherits Window {
             sbHTTPPort := SpinBox {
                 col: 3;
                 // vertical-stretch: 0;
-                width: 80pt;
+                width: 120px;
                 maximum: 65000;
                 minimum: 20;
                 value: 8080;
