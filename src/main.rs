@@ -8,7 +8,7 @@ use tokio::sync::broadcast;
 
 mod servers;
 use servers::FTPServer;
-// use servers::HTTPServer;
+use servers::HTTPServer;
 
 mod utils;
 
@@ -120,30 +120,33 @@ async fn main() {
         }
     });
 
-    // let http_server = Arc::new(HTTPServer::new());
-    // let http_server_c = http_server.clone();
+    let t = HTTPServer::new();
+    t.server.stop();
 
-    // tokio::spawn(async move {
-    //     http_server_c.runner().await;
-    // });
+    let http_server = Arc::new(HTTPServer::new());
+    let http_server_c = http_server.clone();
 
-    // let ui_weak = ui.as_weak();
-    // ui.on_startstop_http_server(move | connect | {
-    //     match connect {
-    //         true => {
-    //             info!("Starting HTTP server");
-    //             let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
-    //             let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
-    //             let port = ui_weak.unwrap().get_sb_http_port() as u16;
+    tokio::spawn(async move {
+        http_server_c.runner().await;
+    });
 
-    //             http_server.start(path, bind_address, port);
-    //         }
-    //         false => {
-    //             info!("Stopping HTTP server");
-    //             http_server.stop();
-    //         }
-    //     }
-    // });
+    let ui_weak = ui.as_weak();
+    ui.on_startstop_http_server(move | connect | {
+        match connect {
+            true => {
+                info!("Starting HTTP server");
+                let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
+                let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
+                let port = ui_weak.unwrap().get_sb_http_port() as u16;
+
+                http_server.server.start(path, bind_address, port);
+            }
+            false => {
+                info!("Stopping HTTP server");
+                http_server.server.stop();
+            }
+        }
+    });
 
     //Start UI
     ui.run().unwrap();
