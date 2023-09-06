@@ -1,4 +1,4 @@
-// #![allow(warnings)]
+#![allow(warnings)]
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
 
@@ -8,7 +8,7 @@ use tokio::sync::broadcast;
 
 mod servers;
 use servers::FTPServer;
-use servers::HTTPServer;
+// use servers::HTTPServer;
 
 mod utils;
 
@@ -120,31 +120,30 @@ async fn main() {
         }
     });
 
-    // HTTP server starts here
-    let http_server = Arc::new(HTTPServer::new());
-    let http_server_c = http_server.clone();
+    // let http_server = Arc::new(HTTPServer::new());
+    // let http_server_c = http_server.clone();
 
-    tokio::spawn(async move {
-        http_server_c.runner().await;
-    });
+    // tokio::spawn(async move {
+    //     http_server_c.runner().await;
+    // });
 
-    let ui_weak = ui.as_weak();
-    ui.on_startstop_http_server(move | connect | {
-        match connect {
-            true => {
-                info!("Starting HTTP server");
-                let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
-                let port = ui_weak.unwrap().get_sb_http_port() as u16;
-                let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
-    
-                http_server.start(path, bind_address, port);
-            }
-            false => {
-                info!("Stopping HTTP server");
-                http_server.stop();
-            }
-        }
-    });
+    // let ui_weak = ui.as_weak();
+    // ui.on_startstop_http_server(move | connect | {
+    //     match connect {
+    //         true => {
+    //             info!("Starting HTTP server");
+    //             let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
+    //             let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
+    //             let port = ui_weak.unwrap().get_sb_http_port() as u16;
+
+    //             http_server.start(path, bind_address, port);
+    //         }
+    //         false => {
+    //             info!("Stopping HTTP server");
+    //             http_server.stop();
+    //         }
+    //     }
+    // });
 
     //Start UI
     ui.run().unwrap();
