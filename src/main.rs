@@ -13,8 +13,7 @@ use servers::HTTPServer;
 mod utils;
 
 use log::{info, debug, error, LevelFilter};
-mod logger;
-use logger::MyLogger;
+use utils::logger::MyLogger;
 
 
 #[tokio::main]
