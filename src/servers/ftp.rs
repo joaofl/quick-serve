@@ -30,10 +30,6 @@ impl FTPServer {
     pub fn start(&self, path: PathBuf, bind_address: String, port: i32) -> Result<(), String> {
         let mut receiver_stop = self.stop_sender.subscribe();
 
-        let full_address = format!("{}:{}", bind_address, port);
-        validation::validate_ip_port(&full_address).expect("A");
-        validation::validate_path(&path).expect("B");
-
         let server = 
             Server::with_fs(path.clone())
                 .passive_ports(50000..65535)
@@ -45,6 +41,8 @@ impl FTPServer {
         });
 
         let status_sender_c = self.status_sender.clone();
+
+        let full_address = format!("{}:{}", bind_address, port);
 
         tokio::spawn(async move {
             info!("Connecting in the background to: {}", full_address);

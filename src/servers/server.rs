@@ -5,6 +5,7 @@ use std::{path::PathBuf, default};
 use tower_http::services::ServeDir;
 use std::net::{SocketAddr, IpAddr};
 
+use super::super::utils::validation;
 
 #[derive(Default, Clone, Debug)]
 pub struct Message {
@@ -38,6 +39,10 @@ impl Server {
     }
 
     pub fn start(&self, path: PathBuf, bind_address: String, port: u16) {
+
+        validation::validate_ip_port(&format!("{}:{}", bind_address, port)).expect("Invalid IP");
+        validation::validate_path(&path).expect("Invalid path");
+
         let s = Message{connect: true, path, bind_address, port};
         self.sender.send(s);
     }
