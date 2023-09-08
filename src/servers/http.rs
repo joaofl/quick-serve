@@ -5,40 +5,8 @@ use std::{path::PathBuf, default};
 use tower_http::services::ServeDir;
 use std::net::{SocketAddr, IpAddr};
 
-
-#[derive(Default, Clone, Debug)]
-struct Message {
-    connect: bool,
-    path: PathBuf,
-    bind_address: String,
-    port: u16,
-}
-
-pub struct Server { sender: broadcast::Sender<Message> }
-
-impl Default for Server {
-    fn default() -> Self {
-        Server { sender: broadcast::channel(1).0 }
-    }
-}
-
-impl Server {
-    pub fn new() -> Self {
-        Server::default()
-    }
-
-    pub fn start(&self, path: PathBuf, bind_address: String, port: u16) {
-        let s = Message{connect: true, path, bind_address, port};
-        self.sender.send(s);
-    }
-
-    pub fn stop(&self){
-        let mut m = Message::default();
-        m.connect = false;
-        self.sender.send(m);
-    }
-}
-
+use super::Server; 
+use super::Message; 
 
 pub struct HTTPServer {
     name: String,
