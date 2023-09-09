@@ -1,4 +1,4 @@
-#![allow(warnings)]
+// #![allow(warnings)]
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
 
@@ -12,7 +12,7 @@ use servers::HTTPServer;
 
 mod utils;
 
-use log::{info, debug, error, LevelFilter};
+use log::{info, debug, LevelFilter};
 use utils::logger::MyLogger;
 
 
@@ -27,7 +27,6 @@ async fn main() {
     log::set_max_level(LevelFilter::Trace); // Set the maximum log level
 
     let ui = AnyServeUI::new().unwrap();
-    let ftp_server = Arc::new(FTPServer::new());
 
     //
     // Get every new log line printed into the text-box
@@ -37,7 +36,7 @@ async fn main() {
     slint::spawn_local(async move {
         loop {
             match receiver.recv().await {
-                Ok(log_line) => {
+                Ok(_log_line) => {
                     
                     // TODO: it seems that there is a massive overhead because of the two lines below
                     // let t = format!("{}\n{}", ui_weak.unwrap().get_te_logs(), &log_line);
@@ -59,28 +58,6 @@ async fn main() {
         };
     }).unwrap();
 
-
-    //
-    // Spawn task along with its local clones
-    let ui_weak = ui.as_weak();
-    let ftp_server_c = ftp_server.clone();
-
-    slint::spawn_local(async move {
-        loop {
-            match ftp_server_c.check().await {
-                Ok(msg) => {
-                    info!("#{}", msg)
-                }
-                Err(msg) => {
-                    ftp_server_c.stop();
-                    ui_weak.unwrap().invoke_is_connected(false);
-                    error!("#{}", msg)
-                }
-            }
-        }
-    }).expect("Failed to spawn FTP status checker");
-
-
     //
     // Spawn task along with its local clones
     let ui_weak = ui.as_weak();
@@ -93,58 +70,60 @@ async fn main() {
     });
 
 
-    //
+    // FTP Server hereon
+    // 
     // Spawn task along with its local clones
-    let ui_weak = ui.as_weak();
+    let ftp_server = Arc::new(FTPServer::new());
     let ftp_server_c = ftp_server.clone();
 
+    let ui_weak = ui.as_weak();
     // Unable to make async calls inside the closure below
     ui.on_startstop_ftp_server(move |connect| {
         if connect {
             // Read and validate the bind address
-            // Get IP and port: TODO
             let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
-            let port = ui_weak.unwrap().get_sb_ftp_port();
+            let port = ui_weak.unwrap().get_sb_ftp_port() as u16;
             let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
     
-            info!("Starting FTP server");
-            let _ = ftp_server.start(path, bind_address, port);
-            // All the above calls are non-blocking code, whereas the status
-            // is received as messages asynchronously.
+            let _ = ftp_server.server.start(path, bind_address, port);
         }
         else {
             info!("Stopping FTP server");
-            ftp_server_c.stop();
+            ftp_server.server.stop();
             // ui_weak.unwrap().invoke_is_connected(false);
         }
     });
 
-    let t = HTTPServer::new();
-    t.server.stop();
+    tokio::spawn(async move {
+        ftp_server_c.runner().await;
+    });
+    
+
+    // HTTPServer hereon
+    // 
+    // let t = HTTPServer::new();
 
     let http_server = Arc::new(HTTPServer::new());
     let http_server_c = http_server.clone();
 
-    tokio::spawn(async move {
-        http_server_c.runner().await;
-    });
-
     let ui_weak = ui.as_weak();
     ui.on_startstop_http_server(move | connect | {
-        match connect {
-            true => {
-                info!("Starting HTTP server");
-                let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
-                let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
-                let port = ui_weak.unwrap().get_sb_http_port() as u16;
+        if connect {
+            info!("Starting HTTP server");
+            let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
+            let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
+            let port = ui_weak.unwrap().get_sb_http_port() as u16;
 
-                http_server.server.start(path, bind_address, port);
-            }
-            false => {
-                info!("Stopping HTTP server");
-                http_server.server.stop();
-            }
+            http_server.server.start(path, bind_address, port);
         }
+        else {
+            info!("Stopping HTTP server");
+            http_server.server.stop();
+        }
+    });
+
+    tokio::spawn(async move {
+        http_server_c.runner().await;
     });
 
     //Start UI
