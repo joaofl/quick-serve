@@ -1,9 +1,6 @@
-use log::{debug, info, error, warn};
+use log::{warn};
 use tokio::sync::broadcast;
-use std::{path::PathBuf, default};
-
-use tower_http::services::ServeDir;
-use std::net::{SocketAddr, IpAddr};
+use std::{path::PathBuf};
 
 use super::super::utils::validation;
 
@@ -22,9 +19,9 @@ pub struct Server {
 
 impl Default for Server {
     fn default() -> Self {
-        let default_callback = || {
-            warn!("Runner callback not set. Not doing anything...");
-        };
+        // let _default_callback = || {
+        //     warn!("Runner callback not set. Not doing anything...");
+        // };
 
         Server { 
             sender: broadcast::channel(1).0,
