@@ -32,8 +32,12 @@ rfd = "0.11"
 # For the headless version
 # clap = "4.3"
 
+[dev-dependencies]
+tempfile = "3.8.0"
+
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
 opt-level = "z"  # Optimize for size.
 lto = true # Link time optimizations
 panic = "abort" # Saves binary size on removing backtrace data on panic
+

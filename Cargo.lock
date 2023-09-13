@@ -171,6 +171,7 @@ dependencies = [
  "log",
  "rfd",
  "slint",
+ "tempfile",
  "tokio",
  "tower",
  "tower-http",
