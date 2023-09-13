@@ -1,4 +1,4 @@
-// #![allow(warnings)]
+#![allow(warnings)]
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
 
@@ -77,6 +77,11 @@ async fn main() {
     let ftp_server_c = ftp_server.clone();
 
     let ui_weak = ui.as_weak();
+
+    tokio::spawn(async move {
+        ftp_server_c.runner().await;
+    });
+
     // Unable to make async calls inside the closure below
     ui.on_startstop_ftp_server(move |connect| {
         if connect {
@@ -94,19 +99,17 @@ async fn main() {
         }
     });
 
-    tokio::spawn(async move {
-        ftp_server_c.runner().await;
-    });
-    
-
     // HTTPServer hereon
-    // 
-    // let t = HTTPServer::new();
-
+    //
     let http_server = Arc::new(HTTPServer::new());
     let http_server_c = http_server.clone();
 
     let ui_weak = ui.as_weak();
+
+    tokio::spawn(async move {
+        http_server_c.runner().await;
+    });
+
     ui.on_startstop_http_server(move | connect | {
         if connect {
             info!("Starting HTTP server");
@@ -120,10 +123,6 @@ async fn main() {
             info!("Stopping HTTP server");
             http_server.server.stop();
         }
-    });
-
-    tokio::spawn(async move {
-        http_server_c.runner().await;
     });
 
     //Start UI
