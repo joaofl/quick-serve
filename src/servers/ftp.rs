@@ -1,6 +1,6 @@
 use libunftp;
 
-use log::{debug};
+use log::{debug, info};
 use unftp_sbe_fs::ServerExt;
 
 use std::time::Duration;
@@ -53,5 +53,58 @@ impl FTPServer {
             }
         }
     }
+}
 
+
+#[cfg(test)]
+mod tests {
+    // Import necessary items for testing
+    use super::*;
+    use std::sync::Arc;
+    use std::process::Command;
+    use tokio::time::{self, Duration};
+
+    use std::io::prelude::*;
+    use std::fs::File;
+
+    #[tokio::test]
+    async fn test_ftp_server() {
+        let ftp_server = Arc::new(FTPServer::new());
+        let ftp_server_c = ftp_server.clone();
+
+        let bind_address = "127.0.0.1".to_string();
+        let port: u16 = 2121;
+
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
+        let path = temp_dir.path().to_path_buf();
+
+        // Create a temporary file inside the directory
+        let mut temp_file = File::create(path.join("temp_file.txt")).expect("Failed to create temp file");
+
+        // Write some data to the temporary file
+        temp_file.write_all(b"Hello, this is a temporary file!").expect("Failed to write to temp file");
+
+
+        tokio::spawn(async move {
+            ftp_server_c.runner().await;
+        });
+
+        let _r = ftp_server.server.start(path.clone(), bind_address.clone(), port);
+        // info!("{:?}", _r);
+
+        time::sleep(Duration::from_secs(1)).await;
+
+        // Create a Command to run wget with a timeout
+        let status = Command::new("wget")
+            .arg(format!("ftp://{}:{}/temp_file.txt",bind_address.clone(), port))
+            .status()
+            .expect("wget could not be executed");
+
+        println!("ls: {status}");
+
+        assert!(status.success(), "Failed to fetch temp file");
+
+        info!("Stopping FTP server");
+        ftp_server.server.stop();
+    }
 }
