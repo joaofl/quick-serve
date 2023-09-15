@@ -7,6 +7,7 @@ use super::super::utils::validation;
 #[derive(Default, Clone, Debug)]
 pub struct Message {
     pub connect: bool,
+    pub terminate: bool,
     pub path: PathBuf,
     pub bind_address: String,
     pub port: u16,
@@ -40,29 +41,22 @@ impl Server {
         validation::validate_ip_port(&format!("{}:{}", bind_address, port)).expect("Invalid IP");
         validation::validate_path(&path).expect("Invalid path");
 
-        let s = Message{connect: true, path, bind_address, port};
+        let s = Message{connect: true, terminate: false, path, bind_address, port};
         self.sender.send(s);
     }
 
     pub fn stop(&self){
         let mut m = Message::default();
         m.connect = false;
+        m.terminate = false;
         self.sender.send(m);
     }
 
-    // pub async fn runner(&self) { 
-    //     // Get notified about the server's spawned task
-    //     let mut receiver = self.sender.subscribe();
-
-    //     loop {
-    //         let m = receiver.recv().await.unwrap();
-    //         debug!("{:?}", m);
-
-    //         if m.connect {
-    //             // (self.callback)(m, receiver);
-    //             debug!("what????")
-    //         }
-    //     }
-    // }
+    pub fn terminate(&self){
+        let mut m = Message::default();
+        m.connect = false;
+        m.terminate = true;
+        self.sender.send(m);
+    }
 }
 
