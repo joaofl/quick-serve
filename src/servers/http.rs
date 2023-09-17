@@ -26,7 +26,7 @@ impl HTTPServer {
             let m = receiver.recv().await.unwrap();
             debug!("{:?}", m);
 
-            if m.terminate { break };
+            if m.terminate { return };
             if m.connect {
                 info!("Starting the server at {}:{}:{}", m.bind_address, m.port, m.path.to_string_lossy());
                 // Spin and await the actual server here
@@ -38,19 +38,19 @@ impl HTTPServer {
 
                 let service = ServeDir::new(m.path);
                 let server = hyper::server::Server::bind(&socket_addr)
-                .serve(tower::make::Shared::new(service))
-                .with_graceful_shutdown(async {
-                    loop {
-                        let m = receiver.recv().await.unwrap();
-                        if m.connect { continue } // Not for me. Go wait another msg
-                        else { break }
-                    }
-                    debug!("Gracefully terminating the HTTP server");
-                });
+                    .serve(tower::make::Shared::new(service))
+                    .with_graceful_shutdown(async {
+                        loop {
+                            let m = receiver.recv().await.unwrap();
+                            if m.terminate { return };
+                            if m.connect { continue } // Not for me. Go wait another msg
+                            else { break }
+                        }
+                        debug!("Gracefully terminating the HTTP server");
+                    });
 
                 server.await.expect("server error");
             }
-
         }
     }
 }
@@ -75,7 +75,6 @@ mod tests {
 
         let t1 = tokio::spawn(async move {
             http_server_c.runner().await;
-            // time::sleep(Duration::from_secs(10)).await;
         });
 
         let t2 = tokio::spawn(async move {
@@ -97,8 +96,7 @@ mod tests {
         });
 
         let t3 = tokio::spawn(async move {
-            time::sleep(Duration::from_secs(10)).await;
-            let _r = http_server_c1.server.stop();
+            time::sleep(Duration::from_secs(1)).await;
             let _r = http_server_c1.server.terminate();
         });
 

@@ -25,7 +25,7 @@ impl Default for Server {
         // };
 
         Server { 
-            sender: broadcast::channel(1).0,
+            sender: broadcast::channel(10).0,
             // callback: Box::new(default_callback),
         }
     }
@@ -53,10 +53,12 @@ impl Server {
     }
 
     pub fn terminate(&self){
+        // First stop and to then terminate
         let mut m = Message::default();
         m.connect = false;
         m.terminate = true;
-        self.sender.send(m);
+        let r1 = self.sender.send(m.clone());
+        let r2 = self.sender.send(m);
     }
 }
 

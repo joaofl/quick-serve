@@ -30,6 +30,7 @@ impl FTPServer {
             debug!("{:?}", m);
             let mut receiver_2 = self.server.sender.subscribe();
 
+            if m.terminate { return };
             if m.connect {
 
                 let server = 
@@ -39,8 +40,9 @@ impl FTPServer {
                     .shutdown_indicator(async move {
                         // let r2 = receiver_2.clone();
                         loop {
-                            let connect = receiver_2.recv().await.unwrap().connect;
-                            if connect { continue } // Not for me. Go wait another msg
+                            let m2 = receiver_2.recv().await.unwrap();
+                            if m2.terminate { break }
+                            if m2.connect { continue } // Not for me. Go wait another msg
                             else { break }
                         }
                         debug!("Gracefully terminating the HTTP server");
@@ -58,14 +60,16 @@ impl FTPServer {
 
 #[cfg(test)]
 mod tests {
+    use std::env::temp_dir;
     // Import necessary items for testing
     use super::*;
     use std::sync::Arc;
-    use std::process::Command;
     use tokio::time::{self, Duration};
+    use tokio::process::Command as AsyncCommand;
 
-    use std::io::prelude::*;
+    extern crate ftp;
     use std::fs::File;
+    use std::io::prelude::*;
 
     #[tokio::test]
     async fn test_ftp_server() {
@@ -73,38 +77,58 @@ mod tests {
         let ftp_server_c = ftp_server.clone();
 
         let bind_address = "127.0.0.1".to_string();
+        let bind_address_c = bind_address.clone();
         let port: u16 = 2121;
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
         let path = temp_dir.path().to_path_buf();
-
         // Create a temporary file inside the directory
-        let mut temp_file = File::create(path.join("temp_file.txt")).expect("Failed to create temp file");
-
+        let mut temp_file = File::create(path.join("file.txt")).expect("Failed to create temp file");
         // Write some data to the temporary file
-        temp_file.write_all(b"Hello, this is a temporary file!").expect("Failed to write to temp file");
+        temp_file.write_all(b"This is a temporary file!").expect("Failed to write to temp file");
 
-
-        tokio::spawn(async move {
-            ftp_server_c.runner().await;
+        let t1 = tokio::spawn(async move {
+            ftp_server.runner().await;
         });
 
-        let _r = ftp_server.server.start(path.clone(), bind_address.clone(), port);
-        // info!("{:?}", _r);
+        let t2 = tokio::spawn(async move {
+            time::sleep(Duration::from_millis(100)).await;
+            let _r = ftp_server_c.server.start(path, bind_address_c, port);
+            time::sleep(Duration::from_millis(500)).await;
+            info!("Stopping FTP server");
+            ftp_server_c.server.terminate();
+        });
 
-        time::sleep(Duration::from_secs(1)).await;
+        let t3 = tokio::spawn( async move {
+            time::sleep(Duration::from_millis(200)).await;
 
-        // Create a Command to run wget with a timeout
-        let status = Command::new("wget")
-            .arg(format!("ftp://{}:{}/temp_file.txt",bind_address.clone(), port))
-            .status()
-            .expect("wget could not be executed");
+            let output1 = AsyncCommand::new("wget")
+                .arg("--timeout=1")
+                .arg("--tries=1")
+                .arg("--output-document=/tmp/file-recv.txt")
+                .arg("ftp://127.0.0.1:2121/file.txt")
+                .output()
+                .await.expect("Failed to execute command");
 
-        println!("ls: {status}");
+            time::sleep(Duration::from_millis(700)).await;
 
-        assert!(status.success(), "Failed to fetch temp file");
+            // let output2 = output_cmd.await.expect("Failed to execute command");
+            let output2 = AsyncCommand::new("wget")
+                .arg("--timeout=1")
+                .arg("--tries=1")
+                .arg("--output-document=/tmp/file-recv.txt")
+                .arg("ftp://127.0.0.1:2121/file.txt")
+                .output()
+                .await.expect("Failed to execute command");
 
-        info!("Stopping FTP server");
-        ftp_server.server.stop();
+            ( output1.status.code().unwrap(), output2.status.code().unwrap() )
+        });
+
+
+        let (r1, r2) = t3.await.unwrap();
+        assert_eq!(r1, 0, "Error downloading file");
+        assert_ne!(r2, 0, "Server did not shutdown");
+
+        tokio::join!(t1, t2);
     }
 }
