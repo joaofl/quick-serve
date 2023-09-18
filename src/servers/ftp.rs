@@ -1,6 +1,6 @@
-use libunftp;
-
 use log::{debug, info};
+
+use libunftp;
 use unftp_sbe_fs::ServerExt;
 
 use std::time::Duration;
@@ -57,78 +57,29 @@ impl FTPServer {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::env::temp_dir;
     // Import necessary items for testing
     use super::*;
     use std::sync::Arc;
     use tokio::time::{self, Duration};
-    use tokio::process::Command as AsyncCommand;
 
-    extern crate ftp;
+    use crate::utils::commands::wget;
+    // mod supe
+    use crate::tests::common;
+
+    // extern crate ftp;
     use std::fs::File;
     use std::io::prelude::*;
 
     #[tokio::test]
-    async fn test_ftp_server() {
-        let ftp_server = Arc::new(FTPServer::new());
-        let ftp_server_c = ftp_server.clone();
+    async fn test_ftp_server_e2e() {
+        let r = common::test_server::e2e(FTPServer::new()).await;
 
-        let bind_address = "127.0.0.1".to_string();
-        let bind_address_c = bind_address.clone();
-        let port: u16 = 2121;
-
-        let temp_dir = tempfile::tempdir().expect("Failed to create temp directory");
-        let path = temp_dir.path().to_path_buf();
-        // Create a temporary file inside the directory
-        let mut temp_file = File::create(path.join("file.txt")).expect("Failed to create temp file");
-        // Write some data to the temporary file
-        temp_file.write_all(b"This is a temporary file!").expect("Failed to write to temp file");
-
-        let t1 = tokio::spawn(async move {
-            ftp_server.runner().await;
-        });
-
-        let t2 = tokio::spawn(async move {
-            time::sleep(Duration::from_millis(100)).await;
-            let _r = ftp_server_c.server.start(path, bind_address_c, port);
-            time::sleep(Duration::from_millis(500)).await;
-            info!("Stopping FTP server");
-            ftp_server_c.server.terminate();
-        });
-
-        let t3 = tokio::spawn( async move {
-            time::sleep(Duration::from_millis(200)).await;
-
-            let output1 = AsyncCommand::new("wget")
-                .arg("--timeout=1")
-                .arg("--tries=1")
-                .arg("--output-document=/tmp/file-recv.txt")
-                .arg("ftp://127.0.0.1:2121/file.txt")
-                .output()
-                .await.expect("Failed to execute command");
-
-            time::sleep(Duration::from_millis(700)).await;
-
-            // let output2 = output_cmd.await.expect("Failed to execute command");
-            let output2 = AsyncCommand::new("wget")
-                .arg("--timeout=1")
-                .arg("--tries=1")
-                .arg("--output-document=/tmp/file-recv.txt")
-                .arg("ftp://127.0.0.1:2121/file.txt")
-                .output()
-                .await.expect("Failed to execute command");
-
-            ( output1.status.code().unwrap(), output2.status.code().unwrap() )
-        });
-
-
-        let (r1, r2) = t3.await.unwrap();
-        assert_eq!(r1, 0, "Error downloading file");
-        assert_ne!(r2, 0, "Server did not shutdown");
-
-        tokio::join!(t1, t2);
+        // let r = task_command.await.unwrap();
+        assert_eq!(r.0, 0, "Server did not start");
+        assert_ne!(r.1, 0, "Server did not stop");
+        assert_eq!(r.2, 0, "Server did not start");
+        assert_ne!(r.1, 0, "Server did not terminate");
     }
 }

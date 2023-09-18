@@ -1,4 +1,4 @@
-use log::{warn};
+
 use tokio::sync::broadcast;
 use std::{path::PathBuf};
 
@@ -57,8 +57,10 @@ impl Server {
         let mut m = Message::default();
         m.connect = false;
         m.terminate = true;
-        let r1 = self.sender.send(m.clone());
-        let r2 = self.sender.send(m);
+        // Send twice. Once to make sure the server is terminated (inner loop)
+        // and the second to ensure runner exits.
+        let _r1 = self.sender.send(m.clone());
+        let _r2 = self.sender.send(m);
     }
 }
 

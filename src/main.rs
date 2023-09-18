@@ -2,6 +2,8 @@
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
 
+use log::{info, debug, LevelFilter};
+
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::broadcast;
@@ -10,11 +12,10 @@ mod servers;
 use servers::FTPServer;
 use servers::HTTPServer;
 
+mod tests;
+
 mod utils;
-
-use log::{info, debug, LevelFilter};
 use utils::logger::MyLogger;
-
 
 #[tokio::main]
 async fn main() {
