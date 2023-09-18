@@ -5,23 +5,25 @@ use unftp_sbe_fs::ServerExt;
 
 use std::time::Duration;
 use super::Server;
+use async_trait::async_trait;
 
+use crate::servers::common::ServerTrait;
 
 pub struct FTPServer {
-    name: String,
+    pub protocol: String,
     pub server: Server,
 }
 
-
-impl FTPServer {
-    pub fn new() -> Self {
+#[async_trait]
+impl ServerTrait for FTPServer {
+    fn new() -> Self {
         FTPServer {
-            name: "HTTP".to_string(), 
+            protocol: "ftp".to_string(),
             server: Server::new(),
         }
     }
 
-    pub async fn runner(&self) { 
+    async fn runner(&self) {
         // Get notified about the server's spawned task
         let mut receiver_1 = self.server.sender.subscribe();
         
@@ -61,16 +63,7 @@ impl FTPServer {
 mod tests {
     // Import necessary items for testing
     use super::*;
-    use std::sync::Arc;
-    use tokio::time::{self, Duration};
-
-    use crate::utils::commands::wget;
-    // mod supe
     use crate::tests::common;
-
-    // extern crate ftp;
-    use std::fs::File;
-    use std::io::prelude::*;
 
     #[tokio::test]
     async fn test_ftp_server_e2e() {

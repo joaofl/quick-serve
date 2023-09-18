@@ -27,6 +27,7 @@ env_logger = "0.10"
 
 # Required by the file dialog
 rfd = "0.11"
+async-trait = "0.1.73"
 # async-trait = "0.1.73"
 
 # For the headless version
@@ -34,7 +35,7 @@ rfd = "0.11"
 
 [dev-dependencies]
 tempfile = "3.8.0"
-ftp = "3.0.1"
+#ftp = "3.0.1"
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.

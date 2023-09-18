@@ -11,6 +11,7 @@ use tokio::sync::broadcast;
 mod servers;
 use servers::FTPServer;
 use servers::HTTPServer;
+use servers::ServerTrait;
 
 mod tests;
 

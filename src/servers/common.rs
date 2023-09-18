@@ -1,6 +1,7 @@
 
 use tokio::sync::broadcast;
 use std::{path::PathBuf};
+use async_trait::async_trait;
 
 use super::super::utils::validation;
 
@@ -15,20 +16,20 @@ pub struct Message {
 
 pub struct Server { 
     pub sender: broadcast::Sender<Message>,
-    // pub callback: Box<dyn Fn()>, 
 }
 
 impl Default for Server {
     fn default() -> Self {
-        // let _default_callback = || {
-        //     warn!("Runner callback not set. Not doing anything...");
-        // };
-
-        Server { 
+        Server {
             sender: broadcast::channel(10).0,
-            // callback: Box::new(default_callback),
         }
     }
+}
+
+#[async_trait]
+pub trait ServerTrait {
+    fn new() -> Self;
+    async fn runner(&self);
 }
 
 impl Server {

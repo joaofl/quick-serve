@@ -6,6 +6,8 @@ pub mod test_server {
     use tokio::time::{self, Duration};
     use crate::utils::commands::wget;
     use crate::servers::FTPServer;
+    use crate::servers::common::ServerTrait;
+
     use std::fs::File;
     use std::io::prelude::*;
 
@@ -15,7 +17,7 @@ pub mod test_server {
 
         let bind_address = "127.0.0.1".to_string();
         let port: u16 = 2121;
-        let url = format!("ftp://{}:{}/file.txt", bind_address.clone(), port);
+        let url = format!("{}://{}:{}/file.txt", server.protocol, bind_address.clone(), port);
 
         let temp_dir = tempfile::tempdir()
             .expect("Failed to create temp directory");
