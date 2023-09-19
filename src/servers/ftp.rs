@@ -7,30 +7,22 @@ use std::time::Duration;
 use super::Server;
 use async_trait::async_trait;
 
-use crate::servers::common::ServerTrait;
 
-pub struct FTPServer {
-    pub protocol: String,
-    pub server: Server,
+#[async_trait]
+pub trait FTPServerRunner {
+    async fn runner(&self);
 }
 
 #[async_trait]
-impl ServerTrait for FTPServer {
-    fn new() -> Self {
-        FTPServer {
-            protocol: "ftp".to_string(),
-            server: Server::new(),
-        }
-    }
-
+impl FTPServerRunner for Server {
     async fn runner(&self) {
         // Get notified about the server's spawned task
-        let mut receiver_1 = self.server.sender.subscribe();
+        let mut receiver_1 = self.sender.subscribe();
         
         loop {
             let m = receiver_1.recv().await.unwrap();
             debug!("{:?}", m);
-            let mut receiver_2 = self.server.sender.subscribe();
+            let mut receiver_2 = self.sender.subscribe();
 
             if m.terminate { return };
             if m.connect {
@@ -61,13 +53,14 @@ impl ServerTrait for FTPServer {
 
 #[cfg(test)]
 mod tests {
+    use crate::servers::Protocol;
     // Import necessary items for testing
     use super::*;
     use crate::tests::common;
 
     #[tokio::test]
     async fn test_ftp_server_e2e() {
-        let r = common::test_server::e2e(FTPServer::new()).await;
+        let r = common::test_server::e2e(Server::new(Protocol::ftp)).await;
 
         // let r = task_command.await.unwrap();
         assert_eq!(r.0, 0, "Server did not start");

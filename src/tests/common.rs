@@ -5,19 +5,20 @@ pub mod test_server {
     use std::sync::Arc;
     use tokio::time::{self, Duration};
     use crate::utils::commands::wget;
-    use crate::servers::*;
-    use crate::servers::common::ServerTrait;
+    use crate::servers::FTPServerRunner;
+    use crate::servers::Server;
+    // use crate::servers::common::ServerTrait;
 
     use std::fs::File;
     use std::io::prelude::*;
 
-    pub async fn e2e(new_server: FTPServer) -> (i32, i32, i32, i32) {
+    pub async fn e2e(new_server: Server) -> (i32, i32, i32, i32) {
         let server = Arc::new(new_server);
         let server_c = server.clone();
 
         let bind_address = "127.0.0.1".to_string();
         let port: u16 = 2121;
-        let url = format!("{}://{}:{}/file.txt", server.protocol, bind_address.clone(), port);
+        let url = format!("{}://{}:{}/file.txt", server.protocol.to_string(), bind_address.clone(), port);
 
         let temp_dir = tempfile::tempdir()
             .expect("Failed to create temp directory");
@@ -32,33 +33,35 @@ pub mod test_server {
 
         let task_runner = tokio::spawn(async move {
             server.runner().await;
+            // <Server as FTPServerRunner>::runner(&server).await
         });
+
 
         let task_command = tokio::spawn(async move {
             time::sleep(Duration::from_millis(100)).await;
 
-            let _ = server_c.server.start(path.clone(), bind_address.clone(), port);
+            let _ = server_c.start(path.clone(), bind_address.clone(), port);
             time::sleep(Duration::from_millis(200)).await;
 
             //Expected to work; o1=0
             let o1 = wget::download(url.clone()).await;
             time::sleep(Duration::from_millis(200)).await;
 
-            server_c.server.stop();
+            server_c.stop();
             time::sleep(Duration::from_millis(200)).await;
 
             //Expected to fail; o2!=0
             let o2 = wget::download(url.clone()).await;
             time::sleep(Duration::from_millis(200)).await;
 
-            let _ = server_c.server.start(path.clone(), bind_address.clone(), port);
+            let _ = server_c.start(path.clone(), bind_address.clone(), port);
             time::sleep(Duration::from_millis(200)).await;
 
             //Expected to work; o3=0
             let o3 = wget::download(url.clone()).await;
             time::sleep(Duration::from_millis(200)).await;
 
-            server_c.server.terminate();
+            server_c.terminate();
             time::sleep(Duration::from_millis(200)).await;
 
             let o4 = wget::download(url.clone()).await;

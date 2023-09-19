@@ -9,14 +9,16 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 
 mod servers;
-use servers::FTPServer;
-use servers::HTTPServer;
-use servers::ServerTrait;
+// use servers::FTPServer;
+// use servers::HTTPServer;
+// use servers::ServerTrait;
+use crate::servers::ftp::FTPServerRunner;
 
 mod tests;
 
 mod utils;
 use utils::logger::MyLogger;
+use crate::servers::{Protocol, Server};
 
 #[tokio::main]
 async fn main() {
@@ -75,7 +77,7 @@ async fn main() {
     // FTP Server hereon
     // 
     // Spawn task along with its local clones
-    let ftp_server = Arc::new(FTPServer::new());
+    let ftp_server = Arc::new(Server::new(Protocol::ftp));
     let ftp_server_c = ftp_server.clone();
 
     let ui_weak = ui.as_weak();
@@ -92,18 +94,18 @@ async fn main() {
             let port = ui_weak.unwrap().get_sb_ftp_port() as u16;
             let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
     
-            let _ = ftp_server.server.start(path, bind_address, port);
+            let _ = ftp_server.start(path, bind_address, port);
         }
         else {
             info!("Stopping FTP server");
-            ftp_server.server.stop();
+            ftp_server.stop();
             // ui_weak.unwrap().invoke_is_connected(false);
         }
     });
 
     // HTTPServer hereon
     //
-    let http_server = Arc::new(HTTPServer::new());
+    let http_server = Arc::new(Server::new(Protocol::http));
     let http_server_c = http_server.clone();
 
     let ui_weak = ui.as_weak();
@@ -119,11 +121,11 @@ async fn main() {
             let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
             let port = ui_weak.unwrap().get_sb_http_port() as u16;
 
-            http_server.server.start(path, bind_address, port);
+            http_server.start(path, bind_address, port);
         }
         else {
             info!("Stopping HTTP server");
-            http_server.server.stop();
+            http_server.stop();
         }
     });
 
