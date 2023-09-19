@@ -5,7 +5,7 @@ pub mod test_server {
     use std::sync::Arc;
     use tokio::time::{self, Duration};
     use crate::utils::commands::wget;
-    use crate::servers::FTPServer;
+    use crate::servers::*;
     use crate::servers::common::ServerTrait;
 
     use std::fs::File;

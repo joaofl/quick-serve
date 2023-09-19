@@ -5,6 +5,13 @@ use async_trait::async_trait;
 
 use super::super::utils::validation;
 
+#[async_trait]
+pub trait ServerTrait {
+    fn new() -> Self;
+
+     async fn runner(&self);
+}
+
 #[derive(Default, Clone, Debug)]
 pub struct Message {
     pub connect: bool,
@@ -24,12 +31,6 @@ impl Default for Server {
             sender: broadcast::channel(10).0,
         }
     }
-}
-
-#[async_trait]
-pub trait ServerTrait {
-    fn new() -> Self;
-    async fn runner(&self);
 }
 
 impl Server {
