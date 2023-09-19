@@ -1,15 +1,20 @@
-
 use tokio::sync::broadcast;
 use std::{path::PathBuf};
-use async_trait::async_trait;
 
-use super::super::utils::validation;
+use crate::utils::validation;
 
-#[async_trait]
-pub trait ServerTrait {
-    fn new() -> Self;
+pub enum Protocol {
+    http,
+    ftp,
+}
 
-     async fn runner(&self);
+impl Protocol {
+    pub fn to_string(&self) -> &str {
+        match self {
+            Protocol::http => "http",
+            Protocol::ftp => "ftp",
+        }
+    }
 }
 
 #[derive(Default, Clone, Debug)]
@@ -21,21 +26,17 @@ pub struct Message {
     pub port: u16,
 }
 
-pub struct Server { 
+pub struct Server {
     pub sender: broadcast::Sender<Message>,
-}
-
-impl Default for Server {
-    fn default() -> Self {
-        Server {
-            sender: broadcast::channel(10).0,
-        }
-    }
+    pub protocol: Protocol,
 }
 
 impl Server {
-    pub fn new() -> Self {
-        Server::default()
+    pub fn new(p: Protocol) -> Self {
+        Server {
+            sender: broadcast::channel(10).0,
+            protocol: p,
+        }
     }
 
     pub fn start(&self, path: PathBuf, bind_address: String, port: u16) {
