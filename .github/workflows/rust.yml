@@ -46,6 +46,10 @@ jobs:
       continue-on-error: false
       run: cargo build --release
 
+    - name: Test for Linux x86_64
+      continue-on-error: true
+      run: cargo test --release
+
     # ################################### 
     # - name: Set up Rust for ARM
     #   uses: actions-rs/toolchain@v1
