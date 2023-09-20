@@ -5,17 +5,17 @@ use crate::utils::validation;
 
 #[derive(Default, PartialEq)]
 pub enum Protocol {
-    http,
-    ftp,
+    Http,
+    Ftp,
     #[default]
-    none,
+    None,
 }
 
 impl Protocol {
     pub fn to_string(&self) -> &str {
         match self {
-            Protocol::http => "http",
-            Protocol::ftp => "ftp",
+            Protocol::Http => "http",
+            Protocol::Ftp => "ftp",
             _ => "none",
         }
     }
@@ -51,14 +51,14 @@ impl Server {
         validation::validate_path(&path).expect("Invalid path");
 
         let s = Message{connect: true, terminate: false, path, bind_address, port};
-        self.sender.send(s);
+        let _ = self.sender.send(s);
     }
 
     pub fn stop(&self){
         let mut m = Message::default();
         m.connect = false;
         m.terminate = false;
-        self.sender.send(m);
+        let _ = self.sender.send(m);
     }
 
     pub fn terminate(&self){
@@ -68,8 +68,8 @@ impl Server {
         m.terminate = true;
         // Send twice. Once to make sure the server is terminated (inner loop)
         // and the second to ensure runner exits.
-        let _r1 = self.sender.send(m.clone());
-        let _r2 = self.sender.send(m);
+        let _ = self.sender.send(m.clone());
+        let _ = self.sender.send(m);
     }
 }
 

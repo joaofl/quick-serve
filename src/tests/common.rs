@@ -32,10 +32,10 @@ pub mod test_server {
             .expect("Failed to write to temp file");
 
         let task_runner = tokio::spawn(async move {
-            if server.protocol == Protocol::ftp {
+            if server.protocol == Protocol::Ftp {
                 FTPServerRunner::runner(server.deref()).await
             }
-            else if server.protocol == Protocol::http {
+            else if server.protocol == Protocol::Http {
                 HTTPServerRunner::runner(server.deref()).await
             }
         });

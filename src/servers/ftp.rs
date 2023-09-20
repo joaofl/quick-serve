@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::{debug};
 
 use libunftp;
 use unftp_sbe_fs::ServerExt;
@@ -19,7 +19,7 @@ pub trait FTPServerRunner {
 impl FTPServerRunner for Server {
     fn new() -> Self {
         let mut s = Server::default();
-        s.protocol = Protocol::ftp;
+        s.protocol = Protocol::Ftp;
         return s;
     }
     async fn runner(&self) {
@@ -52,7 +52,7 @@ impl FTPServerRunner for Server {
                     });
 
                 let full_address = format!("{}:{}", m.bind_address, m.port);
-                server.listen(full_address).await;
+                let _ = server.listen(full_address).await;
             }
         }
     }
@@ -60,7 +60,6 @@ impl FTPServerRunner for Server {
 
 #[cfg(test)]
 mod tests {
-    use crate::servers::Protocol;
     // Import necessary items for testing
     use super::*;
     use crate::tests::common;

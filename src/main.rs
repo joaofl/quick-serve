@@ -1,23 +1,20 @@
-#![allow(warnings)]
+// #![allow(warnings)]
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
 
 use log::{info, debug, LevelFilter};
 
 use std::path::PathBuf;
+use std::ops::Deref;
 use std::sync::Arc;
+
 use tokio::sync::broadcast;
 
-mod servers;
-
-use crate::servers::ftp::FTPServerRunner;
-use std::ops::Deref;
-
 mod tests;
-
 mod utils;
 use utils::logger::MyLogger;
-use crate::servers::{HTTPServerRunner, Protocol, Server};
+mod servers;
+use crate::servers::{HTTPServerRunner,FTPServerRunner, Server};
 
 #[tokio::main]
 async fn main() {

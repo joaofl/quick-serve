@@ -17,7 +17,7 @@ pub trait HTTPServerRunner {
 impl HTTPServerRunner for Server {
     fn new() -> Self {
         let mut s = Server::default();
-        s.protocol = Protocol::http;
+        s.protocol = Protocol::Http;
         return s;
     }
     async fn runner(&self) {
@@ -60,7 +60,6 @@ impl HTTPServerRunner for Server {
 
 #[cfg(test)]
 mod tests {
-    use crate::servers::Protocol;
     // Import necessary items for testing
     use super::*;
     use crate::tests::common;
