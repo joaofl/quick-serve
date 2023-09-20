@@ -1,4 +1,4 @@
-// #![allow(warnings)]
+#![allow(warnings)]
 
 slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
 
@@ -36,11 +36,13 @@ async fn main() {
     slint::spawn_local(async move {
         loop {
             match receiver.recv().await {
-                Ok(_log_line) => {
-                    
-                    // TODO: it seems that there is a massive overhead because of the two lines below
-                    // let t = format!("{}\n{}", ui_weak.unwrap().get_te_logs(), &log_line);
-                    // ui_weak.unwrap().set_te_logs(t.into());
+                Ok(log_line) => {
+                    // Make this a filter into the UI. Maybe from a list?
+                    // Fact is that this text edit from slint cannot deal with too
+                    // many lines. The whole application freezes.
+                    if log_line.contains("any_serve") {
+                        ui_weak.unwrap().invoke_add_log_line((&log_line).into());
+                    }
 
                     //Check if currently scrolled to bottom
                     // let is_glued = ui_weak.unwrap().invoke_is_glued();

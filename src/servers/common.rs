@@ -1,3 +1,4 @@
+use log::info;
 use tokio::sync::broadcast;
 use std::{path::PathBuf};
 
@@ -47,8 +48,8 @@ impl Default for Server {
 impl Server {
     pub fn start(&self, path: PathBuf, bind_address: String, port: u16) {
 
-        validation::validate_ip_port(&format!("{}:{}", bind_address, port)).expect("Invalid IP");
-        validation::validate_path(&path).expect("Invalid path");
+        validation::validate_ip_port(&format!("{}:{}", bind_address, port)).unwrap_or_else(|error| {info!("Invalid IP")});
+        validation::validate_path(&path).unwrap_or_else(|error| {info!("Invalid path")});
 
         let s = Message{connect: true, terminate: false, path, bind_address, port};
         let _ = self.sender.send(s);

@@ -24,6 +24,10 @@ export component AnyServeUI inherits Window {
         btStartFTP.checked = connected;
     }
 
+    public function add_log_line (line: string) {
+        teLogs.text += line + "\n";
+    }
+
     private property <length> pos;
     private property <length> new_pos;
 
