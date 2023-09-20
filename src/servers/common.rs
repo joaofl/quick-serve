@@ -3,9 +3,12 @@ use std::{path::PathBuf};
 
 use crate::utils::validation;
 
+#[derive(Default, PartialEq)]
 pub enum Protocol {
     http,
     ftp,
+    #[default]
+    none,
 }
 
 impl Protocol {
@@ -13,6 +16,7 @@ impl Protocol {
         match self {
             Protocol::http => "http",
             Protocol::ftp => "ftp",
+            _ => "none",
         }
     }
 }
@@ -31,14 +35,16 @@ pub struct Server {
     pub protocol: Protocol,
 }
 
-impl Server {
-    pub fn new(p: Protocol) -> Self {
+impl Default for Server {
+    fn default() -> Self {
         Server {
             sender: broadcast::channel(10).0,
-            protocol: p,
+            protocol: Protocol::default(),
         }
     }
+}
 
+impl Server {
     pub fn start(&self, path: PathBuf, bind_address: String, port: u16) {
 
         validation::validate_ip_port(&format!("{}:{}", bind_address, port)).expect("Invalid IP");
