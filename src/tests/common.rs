@@ -5,19 +5,19 @@ pub mod test_server {
     use std::sync::Arc;
     use tokio::time::{self, Duration};
     use crate::utils::commands::wget;
-    use crate::servers::FTPServerRunner;
+    use crate::servers::{HTTPServerRunner, FTPServerRunner, Protocol};
     use crate::servers::Server;
     // use crate::servers::common::ServerTrait;
 
     use std::fs::File;
     use std::io::prelude::*;
+    use std::ops::Deref;
 
-    pub async fn e2e(new_server: Server) -> (i32, i32, i32, i32) {
+    pub async fn e2e(new_server: Server, port: u16) -> (i32, i32, i32, i32) {
         let server = Arc::new(new_server);
         let server_c = server.clone();
 
         let bind_address = "127.0.0.1".to_string();
-        let port: u16 = 2121;
         let url = format!("{}://{}:{}/file.txt", server.protocol.to_string(), bind_address.clone(), port);
 
         let temp_dir = tempfile::tempdir()
@@ -32,8 +32,12 @@ pub mod test_server {
             .expect("Failed to write to temp file");
 
         let task_runner = tokio::spawn(async move {
-            server.runner().await;
-            // <Server as FTPServerRunner>::runner(&server).await
+            if server.protocol == Protocol::ftp {
+                FTPServerRunner::runner(server.deref()).await
+            }
+            else if server.protocol == Protocol::http {
+                HTTPServerRunner::runner(server.deref()).await
+            }
         });
 
 
