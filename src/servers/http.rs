@@ -9,11 +9,17 @@ use super::Server;
 
 #[async_trait]
 pub trait HTTPServerRunner {
+    fn new() -> Self;
     async fn runner(&self);
 }
 
 #[async_trait]
 impl HTTPServerRunner for Server {
+    fn new() -> Self {
+        let mut s = Server::default();
+        s.protocol = Protocol::http;
+        return s;
+    }
     async fn runner(&self) {
         // Get notified about the server's spawned task
         let mut receiver = self.sender.subscribe();
@@ -52,21 +58,21 @@ impl HTTPServerRunner for Server {
 }
 
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::servers::Protocol;
-//     // Import necessary items for testing
-//     use super::*;
-//     use crate::tests::common;
-//
-//     #[tokio::test]
-//     async fn test_http_server_e2e() {
-//         let r = common::test_server::e2e(Server::new(Protocol::http)).await;
-//
-//         // let r = task_command.await.unwrap();
-//         assert_eq!(r.0, 0, "Server did not start");
-//         assert_ne!(r.1, 0, "Server did not stop");
-//         assert_eq!(r.2, 0, "Server did not start");
-//         assert_ne!(r.1, 0, "Server did not terminate");
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use crate::servers::Protocol;
+    // Import necessary items for testing
+    use super::*;
+    use crate::tests::common;
+
+    #[tokio::test]
+    async fn test_http_server_e2e() {
+        let s = <Server as HTTPServerRunner>::new();
+        let r = common::test_server::e2e(s, 8080).await;
+
+        assert_eq!(r.0, 0, "Server did not start");
+        assert_ne!(r.1, 0, "Server did not stop");
+        assert_eq!(r.2, 0, "Server did not start");
+        assert_ne!(r.1, 0, "Server did not terminate");
+    }
+}

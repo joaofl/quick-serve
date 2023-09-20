@@ -6,15 +6,22 @@ use unftp_sbe_fs::ServerExt;
 use std::time::Duration;
 use super::Server;
 use async_trait::async_trait;
+use crate::servers::Protocol;
 
 
 #[async_trait]
 pub trait FTPServerRunner {
+    fn new() -> Self;
     async fn runner(&self);
 }
 
 #[async_trait]
 impl FTPServerRunner for Server {
+    fn new() -> Self {
+        let mut s = Server::default();
+        s.protocol = Protocol::ftp;
+        return s;
+    }
     async fn runner(&self) {
         // Get notified about the server's spawned task
         let mut receiver_1 = self.sender.subscribe();
@@ -60,9 +67,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_ftp_server_e2e() {
-        let r = common::test_server::e2e(Server::new(Protocol::ftp)).await;
+        let s = <Server as FTPServerRunner>::new();
+        let r = common::test_server::e2e(s, 2121).await;
 
-        // let r = task_command.await.unwrap();
         assert_eq!(r.0, 0, "Server did not start");
         assert_ne!(r.1, 0, "Server did not stop");
         assert_eq!(r.2, 0, "Server did not start");

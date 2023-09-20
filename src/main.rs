@@ -9,16 +9,15 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 
 mod servers;
-// use servers::FTPServer;
-// use servers::HTTPServer;
-// use servers::ServerTrait;
+
 use crate::servers::ftp::FTPServerRunner;
+use std::ops::Deref;
 
 mod tests;
 
 mod utils;
 use utils::logger::MyLogger;
-use crate::servers::{Protocol, Server};
+use crate::servers::{HTTPServerRunner, Protocol, Server};
 
 #[tokio::main]
 async fn main() {
@@ -77,13 +76,12 @@ async fn main() {
     // FTP Server hereon
     // 
     // Spawn task along with its local clones
-    let ftp_server = Arc::new(Server::new(Protocol::ftp));
+    let ftp_server = Arc::new(<Server as FTPServerRunner>::new());
     let ftp_server_c = ftp_server.clone();
-
     let ui_weak = ui.as_weak();
 
     tokio::spawn(async move {
-        ftp_server_c.runner().await;
+        FTPServerRunner::runner(ftp_server_c.deref()).await
     });
 
     // Unable to make async calls inside the closure below
@@ -105,13 +103,12 @@ async fn main() {
 
     // HTTPServer hereon
     //
-    let http_server = Arc::new(Server::new(Protocol::http));
+    let http_server = Arc::new(<Server as HTTPServerRunner>::new());
     let http_server_c = http_server.clone();
-
     let ui_weak = ui.as_weak();
 
     tokio::spawn(async move {
-        http_server_c.runner().await;
+        HTTPServerRunner::runner(http_server_c.deref()).await
     });
 
     ui.on_startstop_http_server(move | connect | {
