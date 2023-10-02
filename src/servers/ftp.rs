@@ -1,6 +1,5 @@
 use log::{debug};
 
-use libunftp;
 use unftp_sbe_fs::ServerExt;
 
 use std::time::Duration;
@@ -72,6 +71,6 @@ mod tests {
         assert_eq!(r.0, 0, "Server did not start");
         assert_ne!(r.1, 0, "Server did not stop");
         assert_eq!(r.2, 0, "Server did not start");
-        assert_ne!(r.1, 0, "Server did not terminate");
+        assert_ne!(r.3, 0, "Server did not terminate");
     }
 }

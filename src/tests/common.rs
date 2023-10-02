@@ -48,30 +48,30 @@ pub mod test_server {
             time::sleep(Duration::from_millis(200)).await;
 
             //Expected to work; o1=0
-            let o1 = wget::download(url.clone()).await;
+            let out_0 = wget::download(url.clone()).await;
             time::sleep(Duration::from_millis(200)).await;
 
             server_c.stop();
             time::sleep(Duration::from_millis(200)).await;
 
             //Expected to fail; o2!=0
-            let o2 = wget::download(url.clone()).await;
+            let out_1 = wget::download(url.clone()).await;
             time::sleep(Duration::from_millis(200)).await;
 
             let _ = server_c.start(path.clone(), bind_address.clone(), port);
             time::sleep(Duration::from_millis(200)).await;
 
             //Expected to work; o3=0
-            let o3 = wget::download(url.clone()).await;
+            let out_2 = wget::download(url.clone()).await;
             time::sleep(Duration::from_millis(200)).await;
 
             server_c.terminate();
             time::sleep(Duration::from_millis(200)).await;
 
-            let o4 = wget::download(url.clone()).await;
+            let out_3 = wget::download(url.clone()).await;
             time::sleep(Duration::from_millis(200)).await;
 
-            (o1, o2, o3, o4)
+            (out_0, out_1, out_2, out_3)
         });
 
         let r = task_command.await.unwrap();
