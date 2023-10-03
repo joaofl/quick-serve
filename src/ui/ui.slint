@@ -10,8 +10,11 @@ export component AnyServeUI inherits Window {
 
     in-out property <string> le_path <=> lePath.text;
     in-out property <string> le_bind_address <=> leBindAddress.text;
+
     out property <int> sb_ftp_port <=> sbFTPPort.value;
     out property <int> sb_http_port <=> sbHTTPPort.value;
+    out property <bool> cb_auto_scroll <=> cbAutoScroll.checked;
+
 
     in property <bool> bt_start_ftp <=> btStartFTP.checked;
     in property <bool> bt_start_http <=> btStartHTTP.checked;
@@ -142,6 +145,12 @@ export component AnyServeUI inherits Window {
             row: 3;
             read-only: true;
             wrap: no-wrap;
+        }
+
+        cbAutoScroll := CheckBox {
+            row: 4;
+            checked: true;
+            text: "Auto scroll";
         }
     }
 }

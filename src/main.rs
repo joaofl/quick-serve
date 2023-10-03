@@ -44,13 +44,9 @@ async fn main() {
                         ui_weak.unwrap().invoke_add_log_line((&log_line).into());
                     }
 
-                    //Check if currently scrolled to bottom
-                    // let is_glued = ui_weak.unwrap().invoke_is_glued();
-
-                    //Only auto-scroll if already "glued" to the bottom
-                    // if (is_glued) {
+                    if (ui_weak.unwrap().get_cb_auto_scroll()) {
                         ui_weak.unwrap().invoke_textedit_scroll_to_end();
-                    // }
+                    }
                 }
                 Err(_) => {
                     println!("Something went wrong while receiving a log message");
