@@ -1,4 +1,4 @@
-use log::info;
+use log::{info, error};
 use tokio::sync::broadcast;
 use std::{path::PathBuf};
 
@@ -46,23 +46,34 @@ impl Default for Server {
 }
 
 impl Server {
-    pub fn start(&self, path: PathBuf, bind_address: String, port: u16) {
+    pub fn start(&self, path: PathBuf, bind_address: String, port: u16) -> Result<(), String> {
+        validation::validate_path(&path)?;
+        validation::validate_ip_port(&format!("{}:{}", bind_address, port))?;
 
-        validation::validate_ip_port(&format!("{}:{}", bind_address, port)).unwrap_or_else(|error| {info!("Invalid IP")});
-        validation::validate_path(&path).unwrap_or_else(|error| {info!("Invalid path")});
+        info!("Starting {} server bind to {}:{}", self.protocol.to_string(), bind_address, port);
+        info!("Serving {}", path.to_string_lossy());
 
         let s = Message{connect: true, terminate: false, path, bind_address, port};
-        let _ = self.sender.send(s);
+        let _ = self.sender.send(s).map_err(|err| format!("Error sending message: {:?}", err))?;
+        Ok(())
     }
 
+
     pub fn stop(&self){
+        // Stop serving, but continues the loop listening
+        // to messages to potentially re-start serving
         let mut m = Message::default();
         m.connect = false;
         m.terminate = false;
+
+        info!("Stopping {} server", self.protocol.to_string());
         let _ = self.sender.send(m);
     }
 
     pub fn terminate(&self){
+        // Stop the serving loop to exit the application. 
+        // Mostly required by the headless version (single sessions).
+
         // First stop and to then terminate
         let mut m = Message::default();
         m.connect = false;

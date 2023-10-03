@@ -13,16 +13,18 @@ export component AnyServeUI inherits Window {
     out property <int> sb_ftp_port <=> sbFTPPort.value;
     out property <int> sb_http_port <=> sbHTTPPort.value;
 
+    in property <bool> bt_start_ftp <=> btStartFTP.checked;
+    in property <bool> bt_start_http <=> btStartHTTP.checked;
+
     // in-out property <string> te_logs <=> teLogs.text;
 
     private property <length> labels-width: 35px;
 
-    public function is_connected (connected: bool) {
-        lePath.enabled = !connected;
-        btPath.enabled = !connected;
-        leBindAddress.enabled = !connected;
-        btStartFTP.checked = connected;
-    }
+    // public function is_connected (connected: bool) {
+    //     lePath.enabled = !connected;
+    //     btPath.enabled = !connected;
+    //     leBindAddress.enabled = !connected;
+    // }
 
     public function add_log_line (line: string) {
         teLogs.text += line + "\n";

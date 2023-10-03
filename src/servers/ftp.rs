@@ -23,16 +23,15 @@ impl FTPServerRunner for Server {
     }
     async fn runner(&self) {
         // Get notified about the server's spawned task
-        let mut receiver_1 = self.sender.subscribe();
+        let mut receiver = self.sender.subscribe();
         
         loop {
-            let m = receiver_1.recv().await.unwrap();
-            debug!("{:?}", m);
-            let mut receiver_2 = self.sender.subscribe();
+            let m = receiver.recv().await.unwrap();
+            let mut receiver2 = self.sender.subscribe();
 
             if m.terminate { return };
             if m.connect {
-
+                // Define new server
                 let server = 
                 libunftp::Server::with_fs(m.path.clone())
                     .passive_ports(50000..65535)
@@ -40,7 +39,7 @@ impl FTPServerRunner for Server {
                     .shutdown_indicator(async move {
                         // let r2 = receiver_2.clone();
                         loop {
-                            let m2 = receiver_2.recv().await.unwrap();
+                            let m2 = receiver2.recv().await.unwrap();
                             if m2.terminate { break }
                             if m2.connect { continue } // Not for me. Go wait another msg
                             else { break }
@@ -50,8 +49,8 @@ impl FTPServerRunner for Server {
                         libunftp::options::Shutdown::new().grace_period(Duration::from_secs(10))
                     });
 
-                let full_address = format!("{}:{}", m.bind_address, m.port);
-                let _ = server.listen(full_address).await;
+                // Spin and await the actual server here
+                let _ = server.listen(format!("{}:{}", m.bind_address, m.port)).await;
             }
         }
     }

@@ -26,11 +26,9 @@ impl HTTPServerRunner for Server {
 
         loop {
             let m = receiver.recv().await.unwrap();
-            debug!("{:?}", m);
 
             if m.terminate { return };
             if m.connect {
-                info!("Starting the server at {}:{}:{}", m.bind_address, m.port, m.path.to_string_lossy());
                 // Spin and await the actual server here
                 // Parse the IP address string into an IpAddr
                 let ip: IpAddr = m.bind_address.parse().expect("Invalid IP address");
