@@ -7,26 +7,26 @@ edition = "2021"
 [dependencies]
 
 # TODO: Put only the used features
-slint = { version = "1.2", default-features = true }
+slint = { version = "1.2.2", default-features = true }
 
 # TODO: Put only the used features
-tokio = { version = "1.32", features = ["full"]}
+tokio = { version = "1.32.0", features = ["full"]}
 
 # FTP server deps
 libunftp = "0.19.0"
 unftp-sbe-fs = "0.2.3"
 
 # HTTP server deps: TODO: check whats needed
-hyper = { version = "0.14", features = ["full"] }
-tower-http = { version = "0.4", features = ["full"] }
-tower = { version = "0.4", features = ["full"] }
+hyper = { version = "0.14.27", features = ["full"] }
+tower-http = { version = "0.4.4", features = ["full"] }
+tower = { version = "0.4.13", features = ["full"] }
 
 # Log related
-log = "0.4"
-env_logger = "0.10"
+log = "0.4.20"
+env_logger = "0.10.0"
 
 # Required by the file dialog
-rfd = "0.12"
+rfd = "0.12.0"
 async-trait = "0.1.73"
 
 # For the headless version
@@ -34,7 +34,6 @@ async-trait = "0.1.73"
 
 [dev-dependencies]
 tempfile = "3.8.0"
-#ftp = "3.0.1"
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
