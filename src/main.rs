@@ -7,6 +7,9 @@ use log::{info, error, debug, LevelFilter};
 use std::path::PathBuf;
 use std::ops::Deref;
 use std::sync::Arc;
+use std::{env, process};
+
+use tftpd::{Config};
 
 use tokio::sync::broadcast;
 
@@ -14,7 +17,7 @@ mod tests;
 mod utils;
 use utils::logger::MyLogger;
 mod servers;
-use crate::servers::{HTTPServerRunner,FTPServerRunner, Server};
+use crate::servers::{HTTPServerRunner,FTPServerRunner, TFTPServerRunner, Server};
 
 #[tokio::main]
 async fn main() {
@@ -68,6 +71,48 @@ async fn main() {
     });
 
 
+    ///////////////////////////////////////////////////////////////////////////////
+    // 
+    // TFTP from here on
+    // 
+    // Spawn task along with its local clones
+    let tftp_server = Arc::new(<Server as TFTPServerRunner>::new());
+    let tftp_server_c = tftp_server.clone();
+    let ui_weak = ui.as_weak();
+
+    tokio::spawn(async move {
+        TFTPServerRunner::runner(tftp_server_c.deref()).await
+    });
+
+    // // Unable to make async calls inside the closure below
+    ui.on_startstop_tftp_server(move |connect| {
+        if connect {
+            // Read and validate the bind address
+            let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
+            let port = ui_weak.unwrap().get_sb_tftp_port() as u16;
+            let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
+
+            match tftp_server.start(path, bind_address, port) {
+                Ok(result) => {
+                    info!("tftp server started successfully");
+                    //Block UI elements
+                }
+                Err(error) => {
+                    error!("Issue while starting tftp server: {}", error);
+                    //Uncheck button
+                    // ui_weak.unwrap().set_bt_start_tftp(false);
+                }
+            }
+        }
+        else {
+            tftp_server.stop();
+            // Unblock UI elements if no other connection exists
+        }
+    });
+
+
+    ///////////////////////////////////////////////////////////////////////////////
+    //
     // FTP Server hereon
     // 
     // Spawn task along with its local clones
@@ -105,6 +150,8 @@ async fn main() {
         }
     });
 
+    ///////////////////////////////////////////////////////////////////////////////
+    //
     // HTTPServer hereon
     //
     let http_server = Arc::new(<Server as HTTPServerRunner>::new());
@@ -137,6 +184,8 @@ async fn main() {
         }
     });
 
-    //Start UI
+
+    //Start UI if no command line is set, 
+    // otherwise, interpret the command, and run the desired stuff
     ui.run().unwrap();
 }

@@ -7,6 +7,8 @@ use crate::utils::validation;
 #[derive(Default, PartialEq)]
 pub enum Protocol {
     Http,
+    Tftp,
+    Dhcp,
     Ftp,
     #[default]
     None,
@@ -16,6 +18,8 @@ impl Protocol {
     pub fn to_string(&self) -> &str {
         match self {
             Protocol::Http => "http",
+            Protocol::Tftp => "tftp",
+            Protocol::Tftp => "dhcp",
             Protocol::Ftp => "ftp",
             _ => "none",
         }

@@ -16,6 +16,9 @@ tokio = { version = "1.32.0", features = ["full"]}
 libunftp = "0.19.0"
 unftp-sbe-fs = "0.2.3"
 
+# TFTP server
+tftpd = "0.2.8"
+
 # HTTP server deps: TODO: check whats needed
 hyper = { version = "0.14.27", features = ["full"] }
 tower-http = { version = "0.4.4", features = ["full"] }

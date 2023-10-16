@@ -5,6 +5,7 @@ import {
 
 export component AnyServeUI inherits Window {
     callback startstop_ftp_server(bool);
+    callback startstop_tftp_server(bool);
     callback startstop_http_server(bool);
     callback show-open-dialog;
 
@@ -12,6 +13,7 @@ export component AnyServeUI inherits Window {
     in-out property <string> le_bind_address <=> leBindAddress.text;
 
     out property <int> sb_ftp_port <=> sbFTPPort.value;
+    out property <int> sb_tftp_port <=> sbTFTPPort.value;
     out property <int> sb_http_port <=> sbHTTPPort.value;
     out property <bool> cb_auto_scroll <=> cbAutoScroll.checked;
 
@@ -98,9 +100,29 @@ export component AnyServeUI inherits Window {
         }
         GridBox {
             row: 2;
-
-            btStartFTP := Button {
+            btStartTFTP := Button {
                 col: 0;
+                width: 80px;
+                text: "TFTP";
+                checkable: true;
+
+                clicked => {
+                    root.startstop_tftp_server(btStartTFTP.checked);
+                }
+            }
+            sbTFTPPort := SpinBox {
+                col: 1;
+                // vertical-stretch: 0;
+                width: 120px;
+                maximum: 65000;
+                minimum: 20;
+                value: 6969;
+                // enabled: GallerySettings.widgets-enabled;
+            }
+            // 
+            // 
+            btStartFTP := Button {
+                col: 2;
                 width: 80px;
                 text: "FTP";
                 checkable: true;
@@ -110,7 +132,7 @@ export component AnyServeUI inherits Window {
                 }
             }
             sbFTPPort := SpinBox {
-                col: 1;
+                col: 3;
                 // vertical-stretch: 0;
                 width: 120px;
                 maximum: 65000;
@@ -118,9 +140,10 @@ export component AnyServeUI inherits Window {
                 value: 2121;
                 // enabled: GallerySettings.widgets-enabled;
             }
+            // 
             //
             btStartHTTP := Button {
-                col: 2;
+                col: 4;
                 width: 80px;
                 text: "HTTP";
                 checkable: true;
@@ -130,7 +153,7 @@ export component AnyServeUI inherits Window {
                 }
             }
             sbHTTPPort := SpinBox {
-                col: 3;
+                col: 5;
                 // vertical-stretch: 0;
                 width: 120px;
                 maximum: 65000;
