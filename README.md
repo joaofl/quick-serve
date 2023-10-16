@@ -13,18 +13,18 @@ The swiss-knife of file serving for developers.
 
 - [x] FTP 
 - [x] HTTP
-- [ ] TFTP 
-- [ ] SFTP 
+- [\] TFTP 
 - [ ] DHCP 
+- [ ] SFTP 
 - [x] Add "Folder chooser" dialog
-- [ ] Show transfer rate (per protocol?)
-- [ ] Show color-codes for the logs to distinguish between protocols
-- [ ] Have a filter to the log levels and sources
 - [ ] Headless version
+- [ ] Show transfer rate
+- [ ] Color-code logs according to protocol
+- [ ] Add logs filter levels and source
 
-## Compiling (tested on Ubuntu 22.04 and Fedora 19)
+## Compiling on Ubuntu 22.04
 
-On Ubuntu
+Install dependencies
 ```bash
 sudo apt install libgtk-3-dev
 ```
