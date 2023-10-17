@@ -17,7 +17,7 @@ libunftp = "0.19.0"
 unftp-sbe-fs = "0.2.3"
 
 # TFTP server
-tftpd = "0.2.8"
+async-tftp = "0.3.6"
 
 # HTTP server deps: TODO: check whats needed
 hyper = { version = "0.14.27", features = ["full"] }

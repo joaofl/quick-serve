@@ -180,6 +180,7 @@ dependencies = [
 name = "any-serve"
 version = "0.2.0"
 dependencies = [
+ "async-tftp",
  "async-trait",
  "env_logger",
  "hyper",
@@ -188,7 +189,6 @@ dependencies = [
  "rfd",
  "slint",
  "tempfile",
- "tftpd",
  "tokio",
  "tower",
  "tower-http",
@@ -401,6 +401,26 @@ name = "async-task"
 version = "4.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9441c6b2fe128a7c2bf680a44c34d0df31ce09e5b7e401fcca3faa483dbc921"
+
+[[package]]
+name = "async-tftp"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ade83b9e060f14582e39ba4f2996c913d34d05b7bd9b6cda92099a525ff3a020"
+dependencies = [
+ "async-executor",
+ "async-io",
+ "async-lock",
+ "async-trait",
+ "blocking",
+ "bytes",
+ "futures-lite",
+ "log",
+ "nom",
+ "num-derive",
+ "num-traits",
+ "thiserror",
+]
 
 [[package]]
 name = "async-trait"
@@ -3018,6 +3038,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-derive"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "num-integer"
 version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4387,12 +4418,6 @@ name = "text-size"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f18aa187839b2bdb1ad2fa35ead8c4c2976b64e4363c386d45ac0f7ee85c9233"
-
-[[package]]
-name = "tftpd"
-version = "0.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6db8daf9583bfbfbab11d669e15672e715b00d33b81b737538ae87dbccf52c3"
 
 [[package]]
 name = "thiserror"

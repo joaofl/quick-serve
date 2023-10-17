@@ -1,16 +1,19 @@
-use log::{debug};
+use log::{debug, info};
 
-// use untftp_sbe_fs::ServerExt;
+use tokio::time::{self, Duration};
+use tokio::task;
 
-use std::{time::Duration, path::PathBuf};
+use std::{path::PathBuf};
 use super::Server;
 use async_trait::async_trait;
 use crate::servers::Protocol;
 
 // Create the TFTP server.
-use tftpd::{Config};
+use async_tftp::server::TftpServerBuilder;
+use async_tftp::Result;
 
 use std::net::Ipv4Addr;
+
 
 #[async_trait]
 pub trait TFTPServerRunner {
@@ -28,45 +31,30 @@ impl TFTPServerRunner for Server {
     async fn runner(&self) {
         // Get notified about the server's spawned task
         let mut receiver = self.sender.subscribe();
-        
+
         loop {
+            info!("Waiting messages");
             let msg = receiver.recv().await.unwrap();
-            let mut receiver2 = self.sender.subscribe();
+
+            // let mut receiver2 = self.sender.subscribe();
+            // let mut tsk: tokio::task::JoinHandle<()>;
 
             if msg.terminate { return };
             if msg.connect {
 
-                let mut config = Config {
-                    ip_address: msg.bind_address.parse::<Ipv4Addr>().unwrap(),
-                    port: msg.port,
-                    directory: msg.path.clone(),
-                    single_port: false,
-                    read_only: false,
-                    duplicate_packets: 1,
-                    overwrite: false,
-                };
+                let tsk = tokio::spawn(async move {
+                    let tftpd = 
+                        TftpServerBuilder::with_dir_ro(".").unwrap()
+                        .bind("0.0.0.0:6969".parse().unwrap())
+                        .build().await.unwrap();
 
-                let mut server = tftpd::Server::new(&config).unwrap();
-
-                println!(   
-                    "Running TFTP Server on {}:{} in {}",
-                    config.ip_address,
-                    config.port,
-                    config.directory.display()
-                );
-
-                tokio::spawn(async move {
-                    server.listen();
+                    tftpd.serve().await;
                 });
 
-                loop {
-                    let m = receiver.recv().await.unwrap();
-                    if m.terminate { return };
-                    if m.connect { continue } // Not for me. Go wait another msg
-                    else { break }
+                let msg = receiver.recv().await.unwrap();
+                if !msg.connect {
+                    tsk.abort();
                 }
-                // Kill the server spawn here
-                debug!("Gracefully terminating the HTTP server");
             }
         }
     }

@@ -9,8 +9,6 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::{env, process};
 
-use tftpd::{Config};
-
 use tokio::sync::broadcast;
 
 mod tests;
