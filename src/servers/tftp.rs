@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::debug;
 
 use tokio::time::{self, Duration};
 use tokio::task;
@@ -33,19 +33,16 @@ impl TFTPServerRunner for Server {
         let mut receiver = self.sender.subscribe();
 
         loop {
-            info!("Waiting messages");
             let msg = receiver.recv().await.unwrap();
-
-            // let mut receiver2 = self.sender.subscribe();
-            // let mut tsk: tokio::task::JoinHandle<()>;
 
             if msg.terminate { return };
             if msg.connect {
 
                 let tsk = tokio::spawn(async move {
+                    let addr = format!("{}:{}", msg.bind_address, msg.port);
                     let tftpd = 
-                        TftpServerBuilder::with_dir_ro(".").unwrap()
-                        .bind("0.0.0.0:6969".parse().unwrap())
+                        TftpServerBuilder::with_dir_ro(msg.path).unwrap()
+                        .bind(addr.parse().unwrap())
                         .build().await.unwrap();
 
                     tftpd.serve().await;
@@ -54,6 +51,7 @@ impl TFTPServerRunner for Server {
                 let msg = receiver.recv().await.unwrap();
                 if !msg.connect {
                     tsk.abort();
+                    debug!("TFTP server terminated");
                 }
             }
         }

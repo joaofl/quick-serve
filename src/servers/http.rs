@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::debug;
 
 use tower_http::services::ServeDir;
 use std::net::{SocketAddr, IpAddr};
