@@ -7,6 +7,7 @@ export component AnyServeUI inherits Window {
     callback startstop_ftp_server(bool);
     callback startstop_tftp_server(bool);
     callback startstop_http_server(bool);
+    callback startstop_dhcp_server(bool);
     callback show-open-dialog;
 
     in-out property <string> le_path <=> lePath.text;
@@ -15,21 +16,17 @@ export component AnyServeUI inherits Window {
     out property <int> sb_ftp_port <=> sbFTPPort.value;
     out property <int> sb_tftp_port <=> sbTFTPPort.value;
     out property <int> sb_http_port <=> sbHTTPPort.value;
+    // out property <int> sb_dhcp_port <=> sbHTTPPort.value;
+
     out property <bool> cb_auto_scroll <=> cbAutoScroll.checked;
 
-
     in property <bool> bt_start_ftp <=> btStartFTP.checked;
+    in property <bool> bt_start_tftp <=> btStartTFTP.checked;
     in property <bool> bt_start_http <=> btStartHTTP.checked;
+    in property <bool> bt_start_dhcp <=> btStartDHCP.checked;
 
-    // in-out property <string> te_logs <=> teLogs.text;
-
-    private property <length> labels-width: 35px;
-
-    // public function is_connected (connected: bool) {
-    //     lePath.enabled = !connected;
-    //     btPath.enabled = !connected;
-    //     leBindAddress.enabled = !connected;
-    // }
+    private property <length> labels-width: 45px;
+    private property <length> buttons-width: 120px;
 
     public function add_log_line (line: string) {
         teLogs.text += line + "\n";
@@ -38,14 +35,14 @@ export component AnyServeUI inherits Window {
     private property <length> pos;
     private property <length> new_pos;
 
-    public function is_glued() -> bool {
-        // TODO: not working well
-        pos = (teLogs.viewport-height + 38.0px - teLogs.height) * -1.0;
-        if (teLogs.viewport_y == pos) {
-            return true;
-        }
-        return false;
-    }
+    // public function is_glued() -> bool {
+    //     // TODO: not working well
+    //     pos = (teLogs.viewport-height + 38.0px - teLogs.height) * -1.0;
+    //     if (teLogs.viewport_y == pos) {
+    //         return true;
+    //     }
+    //     return false;
+    // }
 
     public function textedit_scroll_to_end () {
         // TODO: make sure this "frame-margin" = 38 is true for all the OSs. Maybe calculate it in the begining
@@ -100,67 +97,91 @@ export component AnyServeUI inherits Window {
         }
         GridBox {
             row: 2;
-            btStartTFTP := Button {
+
+            GridBox {
                 col: 0;
-                width: 80px;
-                text: "TFTP";
-                checkable: true;
+                btStartTFTP := Button {
+                    row: 0;
+                    width: buttons-width;
+                    text: "TFTP";
+                    checkable: true;
 
-                clicked => {
-                    root.startstop_tftp_server(btStartTFTP.checked);
+                    clicked => {
+                        root.startstop_tftp_server(btStartTFTP.checked);
+                    }
+                }
+                sbTFTPPort := SpinBox {
+                    row: 1;
+                    // vertical-stretch: 0;
+                    width: buttons-width;
+                    maximum: 65000;
+                    minimum: 20;
+                    value: 6969;
+                    // enabled: GallerySettings.widgets-enabled;
                 }
             }
-            sbTFTPPort := SpinBox {
+            // 
+            // 
+            GridBox {
                 col: 1;
-                // vertical-stretch: 0;
-                width: 120px;
-                maximum: 65000;
-                minimum: 20;
-                value: 6969;
-                // enabled: GallerySettings.widgets-enabled;
-            }
-            // 
-            // 
-            btStartFTP := Button {
-                col: 2;
-                width: 80px;
-                text: "FTP";
-                checkable: true;
+                btStartFTP := Button {
+                    row: 0;
+                    width: buttons-width;
+                    text: "FTP";
+                    checkable: true;
 
-                clicked => {
-                    root.startstop_ftp_server(btStartFTP.checked);
+                    clicked => {
+                        root.startstop_ftp_server(btStartFTP.checked);
+                    }
                 }
-            }
-            sbFTPPort := SpinBox {
-                col: 3;
-                // vertical-stretch: 0;
-                width: 120px;
-                maximum: 65000;
-                minimum: 20;
-                value: 2121;
-                // enabled: GallerySettings.widgets-enabled;
+                sbFTPPort := SpinBox {
+                    row: 1;
+                    // vertical-stretch: 0;
+                    width: buttons-width;
+                    maximum: 65000;
+                    minimum: 20;
+                    value: 2121;
+                    // enabled: GallerySettings.widgets-enabled;
+                }
             }
             // 
             //
-            btStartHTTP := Button {
-                col: 4;
-                width: 80px;
-                text: "HTTP";
-                checkable: true;
+            GridBox {
+                col: 2;
+                btStartHTTP := Button {
+                    row: 0;
+                    width: buttons-width;
+                    text: "HTTP";
+                    checkable: true;
 
-                clicked => {
-                    root.startstop_http_server(btStartHTTP.checked);
+                    clicked => {
+                        root.startstop_http_server(btStartHTTP.checked);
+                    }
+                }
+                sbHTTPPort := SpinBox {
+                    row: 1;
+                    // vertical-stretch: 0;
+                    width: buttons-width;
+                    maximum: 65000;
+                    minimum: 20;
+                    value: 8080;
+                    // enabled: GallerySettings.widgets-enabled;
                 }
             }
-            sbHTTPPort := SpinBox {
-                col: 5;
-                // vertical-stretch: 0;
-                width: 120px;
-                maximum: 65000;
-                minimum: 20;
-                value: 8080;
-                // enabled: GallerySettings.widgets-enabled;
+
+            GridBox {
+                col: 3;
+                btStartDHCP := Button {
+                    width: buttons-width;
+                    text: "DHCP";
+                    checkable: true;
+
+                    clicked => {
+                        root.startstop_dhcp_server(btStartDHCP.checked);
+                    }
+                }
             }
+
             Rectangle {}
         }
 

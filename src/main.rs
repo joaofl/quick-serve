@@ -15,7 +15,7 @@ mod tests;
 mod utils;
 use utils::logger::MyLogger;
 mod servers;
-use crate::servers::{HTTPServerRunner,FTPServerRunner, TFTPServerRunner, Server};
+use crate::servers::{*};
 
 #[tokio::main]
 async fn main() {
@@ -93,18 +93,53 @@ async fn main() {
             match tftp_server.start(path, bind_address, port) {
                 Ok(result) => {
                     info!("tftp server started successfully");
-                    //Block UI elements
                 }
                 Err(error) => {
                     error!("Issue while starting tftp server: {}", error);
                     //Uncheck button
-                    // ui_weak.unwrap().set_bt_start_tftp(false);
+                    ui_weak.unwrap().set_bt_start_tftp(false);
                 }
             }
         }
         else {
             tftp_server.stop();
             // Unblock UI elements if no other connection exists
+        }
+    });
+
+    ///////////////////////////////////////////////////////////////////////////////
+    // 
+    // DHCP from here on
+    // 
+    // Spawn task along with its local clones
+    let dhcp_server = Arc::new(<Server as DHCPServerRunner>::new());
+    let dhcp_server_c = dhcp_server.clone();
+    let ui_weak = ui.as_weak();
+
+    tokio::spawn(async move {
+        DHCPServerRunner::runner(dhcp_server_c.deref()).await
+    });
+
+    // // Unable to make async calls inside the closure below
+    ui.on_startstop_dhcp_server(move |connect| {
+        if connect {
+            // Read and validate the bind address
+            let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
+            let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
+
+            match dhcp_server.start(path, bind_address, 0) {
+                Ok(result) => {
+                    info!("dhcp server started successfully");
+                }
+                Err(error) => {
+                    error!("Issue while starting dhcp server: {}", error);
+                    //Uncheck button
+                    ui_weak.unwrap().set_bt_start_dhcp(false);
+                }
+            }
+        }
+        else {
+            dhcp_server.stop();
         }
     });
 
@@ -133,7 +168,6 @@ async fn main() {
             match ftp_server.start(path, bind_address, port) {
                 Ok(result) => {
                     info!("ftp server started successfully");
-                    //Block UI elements
                 }
                 Err(error) => {
                     error!("Issue while starting ftp server: {}", error);
@@ -144,7 +178,6 @@ async fn main() {
         }
         else {
             ftp_server.stop();
-            // Unblock UI elements if no other connection exists
         }
     });
 
@@ -183,7 +216,7 @@ async fn main() {
     });
 
 
-    //Start UI if no command line is set, 
+    // TODO: Start UI if no command line is set, 
     // otherwise, interpret the command, and run the desired stuff
     ui.run().unwrap();
 }

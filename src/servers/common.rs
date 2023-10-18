@@ -18,9 +18,9 @@ impl Protocol {
     pub fn to_string(&self) -> &str {
         match self {
             Protocol::Http => "http",
-            Protocol::Tftp => "tftp",
-            Protocol::Tftp => "dhcp",
             Protocol::Ftp => "ftp",
+            Protocol::Tftp => "tftp",
+            Protocol::Dhcp => "dhcp",
             _ => "none",
         }
     }
