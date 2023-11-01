@@ -17,9 +17,64 @@ use utils::logger::MyLogger;
 mod servers;
 use crate::servers::{*};
 
+use clap::{Parser, Subcommand};
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    #[arg(short, long, value_name = "IP")]
+    bind_ip: String,
+
+    #[arg(short, long, value_name = "DIRECTORY")]
+    serve_dir: PathBuf,
+
+    #[arg(long, short, help = "Start the DHCP server")]
+    dhcp: bool,
+
+    #[arg(long, short, help = "Start the TFTP server")]
+    tftp: bool,
+
+    #[arg(long, short, help = "Start the FTP server")]
+    ftp: bool,
+
+    #[arg(long, short = 'p', help = "Start the HTTP server")]
+    http: bool,
+}
+
 #[tokio::main]
 async fn main() {
     // ::std::env::set_var("RUST_LOG", "debug");
+
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
+
+    let args = Args::parse();
+
+    print!("{:#?}", args);
+    if args.dhcp {
+        // TODO:
+        todo!("Instantiate and start the DHCP server");
+    }
+
+    if args.tftp {
+        // TODO: 
+        todo!("Instantiate and start the TFTP server");
+    }
+
+    if args.ftp {
+        // TODO: 
+        todo!("Instantiate and start the FTP server");
+    }
+
+    if args.http {
+        // TODO: 
+        todo!("Instantiate and start the HTTP server");
+    }
+
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
 
     let (sender, mut receiver) = broadcast::channel(10);
     let logger = Box::new(MyLogger{sender});
@@ -103,7 +158,7 @@ async fn main() {
         }
         else {
             tftp_server.stop();
-            // Unblock UI elements if no other connection exists
+            // TODO: Block/unblock UI elements when connected/disconnected
         }
     });
 
