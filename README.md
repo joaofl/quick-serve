@@ -4,8 +4,8 @@
 
 
 # Any-serve
-No setup, no config-file, multi-platform, multi-protocol, standalone server for developers or whoever whats to quickly server some files on a LAN.
-The swiss-knife of file serving for developers.
+No setup, zero-config, multi-platform, multi-protocol, standalone server for developers or whoever whats to quickly server some files over the network.
+The swiss-knife of file serving.
 
 ![image](https://github.com/joaofl/any-serve/assets/8092452/0f6a2e10-64f9-4511-96ce-090aada2415e)
 
@@ -13,11 +13,11 @@ The swiss-knife of file serving for developers.
 
 - [x] FTP 
 - [x] HTTP
-- [\] TFTP 
-- [ ] DHCP 
+- [x] TFTP 
+- [x] DHCP 
 - [ ] SFTP 
-- [x] Add "Folder chooser" dialog
-- [ ] Headless version
+- [x] Headless version
+- [ ] User interface
 - [ ] Show transfer rate
 - [ ] Color-code logs according to protocol
 - [ ] Add logs filter levels and source

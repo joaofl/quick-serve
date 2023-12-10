@@ -1,8 +1,9 @@
 #![allow(warnings)]
 
-slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
+// slint::slint!(import { AnyServeUI } from "src/ui/ui.slint";);
 
-use log::{info, error, debug, LevelFilter};
+use hyper::client::connect;
+use log::{info, warn, error, debug, LevelFilter};
 
 use std::path::PathBuf;
 use std::ops::Deref;
@@ -10,268 +11,215 @@ use std::sync::Arc;
 use std::{env, process};
 
 use tokio::sync::broadcast;
+use futures::future::join_all;
 
 mod tests;
 mod utils;
-use utils::logger::MyLogger;
 mod servers;
 use crate::servers::{*};
 
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
+extern crate ctrlc;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    #[arg(short, long, value_name = "IP")]
-    bind_ip: String,
+#[command(author, version, about = "Any-serve", long_about = "Developers swiss-knife of quick file serving")]
+struct Cli {
+    
+    #[arg(
+        help = "Bind IP",
+        short, long, required = false,
+        default_value = "127.0.0.1",
+        group = "server_config",
+        value_name = "IP",
+    )] bind_ip: String,
+    
+    #[arg(
+        help = "Directory to serve",
+        short, long, required = false,
+        default_value = "/tmp/",
+        group = "server_config",
+        value_name = "DIR",
+    )] serve_dir: PathBuf,
 
-    #[arg(short, long, value_name = "DIRECTORY")]
-    serve_dir: PathBuf,
+    // #[arg(
+    //     help = "Verbose logging",
+    //     long, short, required = false,
+    //     default_value = "false",
+    // )] verbose: bool,
+    
+    // #[arg(
+    //     short = 'u', long, 
+    //     required = false, 
+    //     default_value = "false",
+    //     // help = "Starts the user interface"
+    // )] start_ui: bool,
 
-    #[arg(long, short, help = "Start the DHCP server")]
-    dhcp: bool,
 
-    #[arg(long, short, help = "Start the TFTP server")]
-    tftp: bool,
+    #[arg(
+        help = "Start the DHCP server",
+        // value_name = "PORT",
+        long, required = false, 
+        require_equals = true,
+        num_args = 0..=1,
+        default_missing_value = "true"
+    )] dhcp: Option<bool>,
 
-    #[arg(long, short, help = "Start the FTP server")]
-    ftp: bool,
+    #[arg(
+        help = "Start the HTTP server\n\n[default: 8080]",
+        value_name = "PORT",
+        long, required = false, 
+        require_equals = true,
+        num_args = 0..=1,
+        default_missing_value = "8080"
+    )] http: Option<u32>,
 
-    #[arg(long, short = 'p', help = "Start the HTTP server")]
-    http: bool,
+    #[arg(
+        help = "Start the FTP server\n\n[default: 2121]",
+        value_name = "PORT",
+        long, required = false, 
+        require_equals = true,
+        num_args = 0..=1,
+        default_missing_value = "2121"
+    )] ftp: Option<u32>,
+
+    #[arg(
+        help = "Start the TFTP server\n\n[default: 6969]",
+        value_name = "PORT",
+        long, required = false, 
+        require_equals = true,
+        num_args = 0..=1,
+        default_missing_value = "6969"
+    )] tftp: Option<u32>,
 }
+
 
 #[tokio::main]
 async fn main() {
-    // ::std::env::set_var("RUST_LOG", "debug");
+    ::std::env::set_var("RUST_LOG", "debug");
+    env_logger::builder()
+        .format_timestamp_secs()
+        .init();
 
     //////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
+    let cli_args = Cli::parse();
+    println!("{:#?}", cli_args);
 
-    let args = Args::parse();
+    let mut spawned_servers = vec![];
+    let mut servers = vec![];
 
-    print!("{:#?}", args);
-    if args.dhcp {
-        // TODO:
-        todo!("Instantiate and start the DHCP server");
-    }
-
-    if args.tftp {
-        // TODO: 
-        todo!("Instantiate and start the TFTP server");
-    }
-
-    if args.ftp {
-        // TODO: 
-        todo!("Instantiate and start the FTP server");
-    }
-
-    if args.http {
-        // TODO: 
-        todo!("Instantiate and start the HTTP server");
-    }
-
-    //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
-
-    let (sender, mut receiver) = broadcast::channel(10);
-    let logger = Box::new(MyLogger{sender});
-
-    log::set_boxed_logger(logger).unwrap();
-    log::set_max_level(LevelFilter::Trace); // Set the maximum log level
-
-    let ui = AnyServeUI::new().unwrap();
-
-    //
-    // Get every new log line printed into the text-box
-    // TODO: this likely goes better into logger.rs
-    let ui_weak = ui.as_weak();
-
-    slint::spawn_local(async move {
-        loop {
-            match receiver.recv().await {
-                Ok(log_line) => {
-                    // Make this a filter into the UI. Maybe from a list?
-                    // Fact is that this text edit from slint cannot deal with too
-                    // many lines. The whole application freezes.
-                    if log_line.contains("any_serve") {
-                        ui_weak.unwrap().invoke_add_log_line((&log_line).into());
-                    }
-
-                    if (ui_weak.unwrap().get_cb_auto_scroll()) {
-                        ui_weak.unwrap().invoke_textedit_scroll_to_end();
-                    }
-                }
-                Err(_) => {
-                    println!("Something went wrong while receiving a log message");
-                    continue;
-                }
-            };
-        };
-    }).unwrap();
-
-    //
-    // Spawn task along with its local clones
-    let ui_weak = ui.as_weak();
-
-    ui.on_show_open_dialog(move || {
-        let d = utils::file_dialog::show_open_dialog(PathBuf::from("/tmp/"));
-        debug!("Selected {}", d.display());
-
-        ui_weak.unwrap().set_le_path(d.to_str().unwrap().into());
-    });
+    // Read and validate the bind address
+    let bind_ip = cli_args.bind_ip;
+    let path = cli_args.serve_dir;
 
 
     ///////////////////////////////////////////////////////////////////////////////
     // 
     // TFTP from here on
     // 
-    // Spawn task along with its local clones
+    // Spin the runners to wait for any potential server start
     let tftp_server = Arc::new(<Server as TFTPServerRunner>::new());
     let tftp_server_c = tftp_server.clone();
-    let ui_weak = ui.as_weak();
 
-    tokio::spawn(async move {
-        TFTPServerRunner::runner(tftp_server_c.deref()).await
-    });
+    servers.push(tftp_server.clone());
 
-    // // Unable to make async calls inside the closure below
-    ui.on_startstop_tftp_server(move |connect| {
-        if connect {
-            // Read and validate the bind address
-            let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
-            let port = ui_weak.unwrap().get_sb_tftp_port() as u16;
-            let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
+    if cli_args.tftp.is_some() {
+        spawned_servers.push(
+            tokio::spawn(async move {
+            TFTPServerRunner::runner(tftp_server.deref()).await
+            })
+        );
 
-            match tftp_server.start(path, bind_address, port) {
-                Ok(result) => {
-                    info!("tftp server started successfully");
-                }
-                Err(error) => {
-                    error!("Issue while starting tftp server: {}", error);
-                    //Uncheck button
-                    ui_weak.unwrap().set_bt_start_tftp(false);
-                }
-            }
-        }
-        else {
-            tftp_server.stop();
-            // TODO: Block/unblock UI elements when connected/disconnected
-        }
-    });
+        let port = cli_args.tftp.unwrap() as u16;
+
+        tftp_server_c.start(path.clone(), bind_ip.clone(), port);
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////////
+    // 
+    // FTP from here on
+    // 
+    // Spin the runners to wait for any potential server start
+    let ftp_server = Arc::new(<Server as FTPServerRunner>::new());
+    let ftp_server_c = ftp_server.clone();
+
+    servers.push(ftp_server.clone());
+
+    if cli_args.ftp.is_some() {
+        spawned_servers.push(
+            tokio::spawn(async move {
+            FTPServerRunner::runner(ftp_server.deref()).await
+            })
+        );
+
+        let port = cli_args.ftp.unwrap() as u16;
+
+        ftp_server_c.start(path.clone(), bind_ip.clone(), port);
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////////
+    // 
+    // HTTP from here on
+    // 
+    // Spin the runners to wait for any potential server start
+    let http_server = Arc::new(<Server as HTTPServerRunner>::new());
+    let http_server_c = http_server.clone();
+
+    servers.push(http_server.clone());
+
+    if cli_args.http.is_some() {
+        spawned_servers.push(
+            tokio::spawn(async move {
+            HTTPServerRunner::runner(http_server.deref()).await
+            })
+        );
+
+        let port = cli_args.http.unwrap() as u16;
+
+        http_server_c.start(path.clone(), bind_ip.clone(), port);
+    }
+
 
     ///////////////////////////////////////////////////////////////////////////////
     // 
     // DHCP from here on
     // 
-    // Spawn task along with its local clones
+    // Spin the runners to wait for any potential server start
     let dhcp_server = Arc::new(<Server as DHCPServerRunner>::new());
     let dhcp_server_c = dhcp_server.clone();
-    let ui_weak = ui.as_weak();
 
-    tokio::spawn(async move {
-        DHCPServerRunner::runner(dhcp_server_c.deref()).await
-    });
+    servers.push(dhcp_server.clone());
 
-    // // Unable to make async calls inside the closure below
-    ui.on_startstop_dhcp_server(move |connect| {
-        if connect {
-            // Read and validate the bind address
-            let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
-            let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
+    if cli_args.dhcp.is_some() {
+        spawned_servers.push(
+            tokio::spawn(async move {
+            DHCPServerRunner::runner(dhcp_server.deref()).await
+            })
+        );
 
-            match dhcp_server.start(path, bind_address, 0) {
-                Ok(result) => {
-                    info!("dhcp server started successfully");
-                }
-                Err(error) => {
-                    error!("Issue while starting dhcp server: {}", error);
-                    //Uncheck button
-                    ui_weak.unwrap().set_bt_start_dhcp(false);
-                }
-            }
+        let port = cli_args.dhcp.unwrap() as u16;
+
+        dhcp_server_c.start(path.clone(), bind_ip.clone(), port);
+    }
+
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
+
+    // Set up a handler for Ctrl+C signal
+    ctrlc::set_handler(move || {
+        // Handle Ctrl+C signal here
+        warn!("Ctrl+C received. Closing connections and exiting.");
+        // You can perform cleanup operations here before exiting
+
+        for mut server in &mut servers {
+            server.terminate();
         }
-        else {
-            dhcp_server.stop();
-        }
-    });
 
+    }).expect("Error setting Ctrl+C handler");
+    info!("Press Ctrl+C to exit.");
 
-    ///////////////////////////////////////////////////////////////////////////////
-    //
-    // FTP Server hereon
-    // 
-    // Spawn task along with its local clones
-    let ftp_server = Arc::new(<Server as FTPServerRunner>::new());
-    let ftp_server_c = ftp_server.clone();
-    let ui_weak = ui.as_weak();
-
-    tokio::spawn(async move {
-        FTPServerRunner::runner(ftp_server_c.deref()).await
-    });
-
-    // Unable to make async calls inside the closure below
-    ui.on_startstop_ftp_server(move |connect| {
-        if connect {
-            // Read and validate the bind address
-            let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
-            let port = ui_weak.unwrap().get_sb_ftp_port() as u16;
-            let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
-
-            match ftp_server.start(path, bind_address, port) {
-                Ok(result) => {
-                    info!("ftp server started successfully");
-                }
-                Err(error) => {
-                    error!("Issue while starting ftp server: {}", error);
-                    //Uncheck button
-                    ui_weak.unwrap().set_bt_start_ftp(false);
-                }
-            }
-        }
-        else {
-            ftp_server.stop();
-        }
-    });
-
-    ///////////////////////////////////////////////////////////////////////////////
-    //
-    // HTTPServer hereon
-    //
-    let http_server = Arc::new(<Server as HTTPServerRunner>::new());
-    let http_server_c = http_server.clone();
-    let ui_weak = ui.as_weak();
-
-    tokio::spawn(async move {
-        HTTPServerRunner::runner(http_server_c.deref()).await
-    });
-
-    ui.on_startstop_http_server(move | connect | {
-        if connect {
-            let path = PathBuf::from(ui_weak.unwrap().get_le_path().to_string());
-            let bind_address = ui_weak.unwrap().get_le_bind_address().to_string();
-            let port = ui_weak.unwrap().get_sb_http_port() as u16;
-
-            match http_server.start(path, bind_address, port) {
-                Ok(result) => {
-                    info!("http server started successfully");
-                }
-                Err(error) => {
-                    error!("Issue while starting http server: {}", error);
-                    //Uncheck button
-                    ui_weak.unwrap().set_bt_start_http(false);
-                }
-            }
-        }
-        else {
-            http_server.stop();
-        }
-    });
-
-
-    // TODO: Start UI if no command line is set, 
-    // otherwise, interpret the command, and run the desired stuff
-    ui.run().unwrap();
+    futures::future::join_all(spawned_servers).await;
+    return;
 }

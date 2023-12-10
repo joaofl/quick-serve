@@ -1,4 +1,4 @@
-use log::debug;
+use log::{info, warn, error, debug};
 
 use tokio::time::{self, Duration};
 use tokio::task;
@@ -37,7 +37,6 @@ impl TFTPServerRunner for Server {
 
             if msg.terminate { return };
             if msg.connect {
-
                 let tsk = tokio::spawn(async move {
                     let addr = format!("{}:{}", msg.bind_address, msg.port);
                     let tftpd = 
@@ -45,13 +44,15 @@ impl TFTPServerRunner for Server {
                         .bind(addr.parse().unwrap())
                         .build().await.unwrap();
 
+                    info!("Starting TFTP server...");
                     tftpd.serve().await;
                 });
 
                 let msg = receiver.recv().await.unwrap();
                 if !msg.connect {
                     tsk.abort();
-                    debug!("TFTP server terminated");
+                    debug!("TFTP server stopped");
+                    if msg.terminate { return };
                 }
             }
         }
@@ -67,7 +68,7 @@ mod tests {
     #[tokio::test]
     async fn test_tftp_server_e2e() {
         let s = <Server as TFTPServerRunner>::new();
-        let r = common::test_server::e2e(s, 6969).await;
+        let r = common::test_server::e2e(s, 6979).await;
 
         assert_eq!(r.0, 0, "Server did not start");
         assert_ne!(r.1, 0, "Server did not stop");
