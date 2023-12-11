@@ -29,7 +29,6 @@ struct Cli {
         help = "Bind IP",
         short, long, required = false,
         default_value = "127.0.0.1",
-        group = "server_config",
         value_name = "IP",
     )] bind_ip: String,
     
@@ -37,7 +36,6 @@ struct Cli {
         help = "Directory to serve",
         short, long, required = false,
         default_value = "/tmp/",
-        group = "server_config",
         value_name = "DIR",
     )] serve_dir: PathBuf,
 
