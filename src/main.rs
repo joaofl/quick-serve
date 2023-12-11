@@ -30,6 +30,7 @@ struct Cli {
         short, long, required = false,
         default_value = "127.0.0.1",
         value_name = "IP",
+        require_equals = true,
     )] bind_ip: String,
     
     #[arg(
@@ -37,56 +38,46 @@ struct Cli {
         short, long, required = false,
         default_value = "/tmp/",
         value_name = "DIR",
+        require_equals = true,
     )] serve_dir: PathBuf,
 
-    // #[arg(
-    //     help = "Verbose logging",
-    //     long, short, required = false,
-    //     default_value = "false",
-    // )] verbose: bool,
-    
-    // #[arg(
-    //     short = 'u', long, 
-    //     required = false, 
-    //     default_value = "false",
-    //     // help = "Starts the user interface"
-    // )] start_ui: bool,
-
+    #[arg(
+        help = "Verbose logging",
+        short, long, required = false,
+        action = clap::ArgAction::Count,
+    )] verbose: u8,
 
     #[arg(
         help = "Start the DHCP server",
-        // value_name = "PORT",
-        long, required = false, 
-        require_equals = true,
-        num_args = 0..=1,
-        default_missing_value = "true"
-    )] dhcp: Option<bool>,
+        short, long, required = false, 
+        num_args = 0,
+    )] dhcp: bool,
 
     #[arg(
-        help = "Start the HTTP server\n\n[default: 8080]",
-        value_name = "PORT",
-        long, required = false, 
-        require_equals = true,
+        default_missing_value = "8080",
+        help = "Start the HTTP server [default port: 8080]",
+        short = 'H', long, required = false, 
         num_args = 0..=1,
-        default_missing_value = "8080"
+        require_equals = true,
+        value_name = "PORT",
     )] http: Option<u32>,
 
     #[arg(
-        help = "Start the FTP server\n\n[default: 2121]",
-        value_name = "PORT",
-        long, required = false, 
-        require_equals = true,
+        default_missing_value = "2121",
+        help = "Start the FTP server [default port: 2121]",
+        short, long, required = false, 
         num_args = 0..=1,
-        default_missing_value = "2121"
+        require_equals = true,
+        value_name = "PORT",
     )] ftp: Option<u32>,
 
     #[arg(
-        help = "Start the TFTP server\n\n[default: 6969]",
-        value_name = "PORT",
-        long, required = false, 
-        require_equals = true,
+        default_missing_value = "6969",
+        help = "Start the TFTP server [default port: 6969]",
+        short, long, required = false, 
         num_args = 0..=1,
-        default_missing_value = "6969"
+        require_equals = true,
+        value_name = "PORT",
     )] tftp: Option<u32>,
 }
 
@@ -190,16 +181,14 @@ async fn main() {
 
     servers.push(dhcp_server.clone());
 
-    if cli_args.dhcp.is_some() {
+    if cli_args.dhcp {
         spawned_servers.push(
             tokio::spawn(async move {
             DHCPServerRunner::runner(dhcp_server.deref()).await
             })
         );
 
-        let port = cli_args.dhcp.unwrap() as u16;
-
-        dhcp_server_c.start(path.clone(), bind_ip.clone(), port);
+        dhcp_server_c.start(path.clone(), bind_ip.clone(), 0);
     }
 
     //////////////////////////////////////////////////////////////////////
