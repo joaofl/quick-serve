@@ -1,9 +1,9 @@
 use log::debug;
 
-use tokio::time::{self, Duration};
-use tokio::task;
+use tokio::time::{Duration};
 
-use std::{path::PathBuf};
+
+
 use super::Server;
 use async_trait::async_trait;
 use crate::servers::Protocol;
@@ -211,22 +211,10 @@ fn nak(s: &server::Server, req_packet: packet::Packet, message: &str) {
 }
 
 
-
 #[cfg(test)]
 mod tests {
-    // Import necessary items for testing
-    use super::*;
-    use crate::tests::common;
-
     #[tokio::test]
-    async fn test_dhcp_server_e2e() {
-        let s = <Server as DHCPServerRunner>::new();
-        // let r = common::test_server::e2e(s, 6969).await;
-
-        // assert_eq!(r.0, 0, "Server did not start");
-        // assert_ne!(r.1, 0, "Server did not stop");
-        // assert_eq!(r.2, 0, "Server did not start");
-        // assert_ne!(r.3, 0, "Server did not terminate");
-        todo!("Tests not yet implemented");
+    async fn test_e2e() {
+        todo!("Not done yet....")
     }
 }

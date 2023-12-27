@@ -1,82 +1,71 @@
 
 #[cfg(test)]
 pub mod test_server {
-
-    use std::sync::Arc;
-    use tokio::time::{self, Duration};
-    use crate::utils::commands::wget;
-    use crate::servers::{HTTPServerRunner, FTPServerRunner, Protocol};
-    use crate::servers::Server;
-    // use crate::servers::common::ServerTrait;
-
-    use std::fs::File;
-    use std::io::prelude::*;
+    use log::{info};
+    use async_process::Command;
+    use crate::servers::{Server, FTPRunner};
+    use std::fs::{File};
+    use std::io::{Write};
+    use std::{sync::Arc, path::PathBuf};
+    use std::io::Error;
     use std::ops::Deref;
+    use tokio::time::{self, Duration};
+    use std::string::String;
 
-    pub async fn e2e(new_server: Server, port: u16) -> (i32, i32, i32, i32) {
-        let server = Arc::new(new_server);
-        let server_c = server.clone();
+    async fn run_cmd(cmd: &String) -> Result<String, String> {
+        info!("Running command: {}", cmd);
 
-        let bind_address = "127.0.0.1".to_string();
-        let url = format!("{}://{}:{}/file.txt", server.protocol.to_string(), bind_address.clone(), port);
+        let output = Command::new("sh")
+            .arg("-c")
+            .arg(cmd)
+            .output().await
+            .expect("failed to execute process");
 
-        let temp_dir = tempfile::tempdir()
-            .expect("Failed to create temp directory");
-        let path = temp_dir.path().to_path_buf();
+        // let out = String::from_utf8_lossy(&output.stdout).deref().to_string();
+        let err = String::from_utf8_lossy(&output.stderr).deref().to_string();
+        // print!("{}", err);
+        if output.status.success() { Ok(err) } else { Err(err) }
+    }
 
-        // Create a temporary file inside the directory
-        let mut temp_file = File::create(path.join("file.txt"))
-            .expect("Failed to create temp file");
+    pub async fn mkfile() -> Result<(PathBuf, String), Error> {
+        // Create a temporary directory
+        let temp_dir_path = PathBuf::from("/tmp/any_serve");
 
-        temp_file.write_all(b"This is a temporary file!")
-            .expect("Failed to write to temp file");
+        let cmd = &format!("mkdir --parents --verbose {}", &temp_dir_path.to_string_lossy());
+        let _r = run_cmd(cmd).await;
 
-        let task_runner = tokio::spawn(async move {
-            if server.protocol == Protocol::Ftp {
-                FTPServerRunner::runner(server.deref()).await
-            }
-            else if server.protocol == Protocol::Http {
-                HTTPServerRunner::runner(server.deref()).await
-            }
+        // Create a file inside the temporary directory
+        let file_name = String::from("in.txt");
+        let file_path = temp_dir_path.join(file_name.clone());
+        let mut file = File::create(&file_path)?;
+
+        // Write some data to the file
+        let some_text = "Hello, this is some known data written to the file!";
+        write!(file, "{}\n", some_text.repeat(100))?;
+
+        info!("Temporary directory: {:?}", temp_dir_path);
+        info!("File path: {:?}", file_path);
+
+        Ok((temp_dir_path, file_name))
+    }
+
+    pub async fn test_server_e2e(s: Arc<Server>, cmd: String) {
+        let sc = s.clone();
+        let runner = tokio::spawn(async move {
+            sc.deref().runner().await;
         });
 
+        time::sleep(Duration::from_millis(100)).await;
+        let _ = s.start();
+        let r = run_cmd(&cmd).await;
+        assert!(r.is_ok(), "Failed to download with error: {}", r.unwrap());
 
-        let task_command = tokio::spawn(async move {
-            time::sleep(Duration::from_millis(100)).await;
+        time::sleep(Duration::from_millis(100)).await;
+        let _ = s.terminate();
+        let r = run_cmd(&cmd).await;
+        assert!(r.is_err(), "Succeed to download. Server not terminated");
 
-            let _ = server_c.start(path.clone(), bind_address.clone(), port);
-            time::sleep(Duration::from_millis(200)).await;
-
-            //Expected to work; o1=0
-            let out_0 = wget::download(url.clone()).await;
-            time::sleep(Duration::from_millis(200)).await;
-
-            server_c.stop();
-            time::sleep(Duration::from_millis(200)).await;
-
-            //Expected to fail; o2!=0
-            let out_1 = wget::download(url.clone()).await;
-            time::sleep(Duration::from_millis(200)).await;
-
-            let _ = server_c.start(path.clone(), bind_address.clone(), port);
-            time::sleep(Duration::from_millis(200)).await;
-
-            //Expected to work; o3=0
-            let out_2 = wget::download(url.clone()).await;
-            time::sleep(Duration::from_millis(200)).await;
-
-            server_c.terminate();
-            time::sleep(Duration::from_millis(200)).await;
-
-            let out_3 = wget::download(url.clone()).await;
-            time::sleep(Duration::from_millis(200)).await;
-
-            (out_0, out_1, out_2, out_3)
-        });
-
-        let r = task_command.await.unwrap();
-        let _ = task_runner.await;
-
-        return r;
+        let _ = runner.await;
     }
 }
+

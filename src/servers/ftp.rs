@@ -1,26 +1,34 @@
+use std::path::PathBuf;
 use log::{debug};
-
 use unftp_sbe_fs::ServerExt;
-
 use std::time::Duration;
 use super::Server;
 use async_trait::async_trait;
 use crate::servers::Protocol;
+use crate::utils::validation;
 
 
 #[async_trait]
-pub trait FTPServerRunner {
-    fn new() -> Self;
+pub trait FTPRunner {
+    fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
     async fn runner(&self);
 }
 
 #[async_trait]
-impl FTPServerRunner for Server {
-    fn new() -> Self {
+impl FTPRunner for Server {
+    fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
         let mut s = Server::default();
+
+        validation::validate_path(&path).expect("Invalid path");
+        validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
+        s.path = path;
+        s.bind_address = bind_ip;
+        s.port = port;
+
         s.protocol = Protocol::Ftp;
         return s;
     }
+
     async fn runner(&self) {
         // Get notified about the server's spawned task
         let mut receiver = self.sender.subscribe();
@@ -33,7 +41,7 @@ impl FTPServerRunner for Server {
             if m.connect {
                 // Define new server
                 let server = 
-                libunftp::Server::with_fs(m.path.clone())
+                libunftp::Server::with_fs(self.path.clone())
                     .passive_ports(50000..65535)
                     .metrics()
                     .shutdown_indicator(async move {
@@ -44,32 +52,39 @@ impl FTPServerRunner for Server {
                             if m2.connect { continue } // Not for me. Go wait another msg
                             else { break }
                         }
-                        debug!("Gracefully terminating the HTTP server");
+                        debug!("Gracefully terminating the FTP server");
                         //Give 10 seconds to potential ongoing connections to finish, otherwise finish immediately
                         libunftp::options::Shutdown::new().grace_period(Duration::from_secs(10))
                     });
 
                 // Spin and await the actual server here
-                let _ = server.listen(format!("{}:{}", m.bind_address, m.port)).await;
+                let _ = server.listen(format!("{}:{}", self.bind_address, self.port)).await;
             }
         }
     }
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////
+//                                        TESTS                                    //
+/////////////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
-    // Import necessary items for testing
-    use super::*;
-    use crate::tests::common;
+    use crate::servers::{Server, FTPRunner};
+    use std::{sync::Arc};
+    use std::string::String;
 
     #[tokio::test]
-    async fn test_ftp_server_e2e() {
-        let s = <Server as FTPServerRunner>::new();
-        let r = common::test_server::e2e(s, 2121).await;
+    async fn test_e2e() {
+        let bind_ip = String::from("127.0.0.1");
+        let port: u16 = 2121;
+        let (temp_dir_path, file_name) =
+            crate::tests::common::test_server::mkfile().await.expect("Failed to create temp file...");
 
-        assert_eq!(r.0, 0, "Server did not start");
-        assert_ne!(r.1, 0, "Server did not stop");
-        assert_eq!(r.2, 0, "Server did not start");
-        assert_ne!(r.3, 0, "Server did not terminate");
+        let s = Arc::new(<Server as FTPRunner>::new(temp_dir_path.clone(), bind_ip.clone(), port));
+        let cmd = format!("wget -t2 -T1 {}://{}:{}/{} -O /tmp/out.txt",
+                          s.protocol.to_string(), bind_ip.clone(), port, file_name);
+
+        crate::tests::common::test_server::test_server_e2e(s, cmd).await;
     }
 }

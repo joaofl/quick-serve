@@ -2,25 +2,35 @@ use log::debug;
 
 use tower_http::services::ServeDir;
 use std::net::{SocketAddr, IpAddr};
+use std::path::PathBuf;
+use std::sync::Arc;
 use crate::servers::Protocol;
 use async_trait::async_trait;
+use crate::utils::validation;
 
 use super::Server;
 
 #[async_trait]
-pub trait HTTPServerRunner {
-    fn new() -> Self;
-    async fn runner(&self);
+pub trait HTTPRunner {
+    fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
+    async fn runner(self: Arc<Self>);
 }
 
 #[async_trait]
-impl HTTPServerRunner for Server {
-    fn new() -> Self {
+impl HTTPRunner for Server {
+    fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
         let mut s = Server::default();
+
+        validation::validate_path(&path).expect("Invalid path");
+        validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
+        s.path = path;
+        s.bind_address = bind_ip;
+        s.port = port;
+
         s.protocol = Protocol::Http;
         return s;
     }
-    async fn runner(&self) {
+    async fn runner(self: Arc<Self>) {
         // Get notified about the server's spawned task
         let mut receiver = self.sender.subscribe();
 
@@ -31,12 +41,12 @@ impl HTTPServerRunner for Server {
             if m.connect {
                 // Spin and await the actual server here
                 // Parse the IP address string into an IpAddr
-                let ip: IpAddr = m.bind_address.parse().expect("Invalid IP address");
+                let ip: IpAddr = self.bind_address.parse().expect("Invalid IP address");
 
                 // Create a SocketAddr from the IpAddr and port
-                let socket_addr = SocketAddr::new(ip, m.port);
-
-                let service = ServeDir::new(m.path);
+                let socket_addr = SocketAddr::new(ip, self.port);
+                let me = Arc::clone(&self);
+                let service = ServeDir::new(me.path.clone());
                 let server = hyper::server::Server::bind(&socket_addr)
                     .serve(tower::make::Shared::new(service))
                     .with_graceful_shutdown(async {
@@ -58,18 +68,21 @@ impl HTTPServerRunner for Server {
 
 #[cfg(test)]
 mod tests {
-    // Import necessary items for testing
-    use super::*;
-    use crate::tests::common;
+    use crate::servers::{Server, HTTPRunner};
+    use std::{sync::Arc};
+    use std::string::String;
 
     #[tokio::test]
-    async fn test_http_server_e2e() {
-        let s = <Server as HTTPServerRunner>::new();
-        let r = common::test_server::e2e(s, 8080).await;
+    async fn test_e2e() {
+        let bind_ip = String::from("127.0.0.1");
+        let port: u16 = 8080;
+        let (temp_dir_path, file_name) =
+            crate::tests::common::test_server::mkfile().await.expect("Failed to create temp file...");
 
-        assert_eq!(r.0, 0, "Server did not start");
-        assert_ne!(r.1, 0, "Server did not stop");
-        assert_eq!(r.2, 0, "Server did not start");
-        assert_ne!(r.1, 0, "Server did not terminate");
+        let s = Arc::new(<Server as HTTPRunner>::new(temp_dir_path.clone(), bind_ip.clone(), port));
+        let cmd = format!("wget -t2 -T1 {}://{}:{}/{} -O /tmp/out.txt",
+                          s.protocol.to_string(), bind_ip.clone(), port, file_name);
+
+        crate::tests::common::test_server::test_server_e2e(s, cmd).await;
     }
 }
