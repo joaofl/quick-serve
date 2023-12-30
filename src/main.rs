@@ -1,23 +1,17 @@
 // #![allow(warnings)]
 
-
 use log::{error, info, warn};
 
 use std::path::PathBuf;
 use std::ops::Deref;
 use std::sync::Arc;
 
-
-
-
-
-mod tests;
 mod utils;
 mod servers;
 use crate::servers::{*};
-
 use clap::{Parser};
 extern crate ctrlc;
+extern crate core;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Any-serve", long_about = "Developers swiss-knife of quick file serving")]
@@ -218,4 +212,17 @@ async fn main() {
 
     futures::future::join_all(spawned_runners).await;
     return;
+}
+
+#[cfg(test)]
+mod tests {
+    use predicates::prelude::*;
+    use assert_cmd::Command;
+
+    #[test]
+    fn test_cli_help() {
+        let mut cmd = Command::cargo_bin("any-serve").unwrap();
+        cmd.arg("--help");
+        cmd.assert().success().stdout(predicate::str::contains("Usage: any-serve"));
+    }
 }

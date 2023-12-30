@@ -68,23 +68,48 @@ impl FTPRunner for Server {
 /////////////////////////////////////////////////////////////////////////////////////
 //                                        TESTS                                    //
 /////////////////////////////////////////////////////////////////////////////////////
+// #[cfg(test)]
+// mod tests {
+    // #[tokio::test]
+    // async fn test_e2e() {
+    //     let bind_ip = String::from("127.0.0.1");
+    //     let port: u16 = 2121;
+    //     let (temp_dir_path, file_name) =
+    //         crate::tests::common::test_server::mkfile().await.expect("Failed to create temp file...");
+    //
+    //     let s = Arc::new(<Server as FTPRunner>::new(temp_dir_path.clone(), bind_ip.clone(), port));
+    //     let cmd = format!("wget -t2 -T1 {}://{}:{}/{} -O /tmp/out.txt",
+    //                       s.protocol.to_string(), bind_ip.clone(), port, file_name);
+    //
+    //     crate::tests::common::test_server::test_server_e2e(s, cmd).await;
+    // }
+// }
+
+
 #[cfg(test)]
 mod tests {
-    use crate::servers::{Server, FTPRunner};
-    use std::{sync::Arc};
-    use std::string::String;
+    use std::time::Duration;
+    use assert_cmd::Command;
+    use std::thread;
 
-    #[tokio::test]
-    async fn test_e2e() {
-        let bind_ip = String::from("127.0.0.1");
-        let port: u16 = 2121;
-        let (temp_dir_path, file_name) =
-            crate::tests::common::test_server::mkfile().await.expect("Failed to create temp file...");
+    #[test]
+    fn test_e2e() {
+        let server = thread::spawn(|| {
+            let mut cmd = Command::cargo_bin("any-serve").unwrap();
+            cmd.timeout(Duration::from_secs(2));
+            cmd.args(&["--ftp", "-v"]);
+            cmd.unwrap()
+        });
 
-        let s = Arc::new(<Server as FTPRunner>::new(temp_dir_path.clone(), bind_ip.clone(), port));
-        let cmd = format!("wget -t2 -T1 {}://{}:{}/{} -O /tmp/out.txt",
-                          s.protocol.to_string(), bind_ip.clone(), port, file_name);
+        let client = thread::spawn(|| {
+            thread::sleep(Duration::from_millis(1000));
+            let mut cmd = Command::new("wget");
+            cmd.env("PATH", "/bin");
+            cmd.args(&["-t2", "-T1", "ftp://127.0.0.1:2121/in.txt", "-O", "/tmp/out.txt"]);
+            cmd.unwrap()
+        });
 
-        crate::tests::common::test_server::test_server_e2e(s, cmd).await;
+        let _ = server.join();
+        client.join().unwrap();
     }
 }
