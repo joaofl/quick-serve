@@ -36,8 +36,8 @@ ctrlc = "3.4.2"
 
 [dev-dependencies]
 tempfile = "3.8.1"
-async-process = "2.0.1"
-mozim = "0.2.2"
+assert_cmd = "2.0.12"
+predicates = "3.0.4"
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
