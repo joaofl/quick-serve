@@ -68,24 +68,6 @@ impl FTPRunner for Server {
 /////////////////////////////////////////////////////////////////////////////////////
 //                                        TESTS                                    //
 /////////////////////////////////////////////////////////////////////////////////////
-// #[cfg(test)]
-// mod tests {
-    // #[tokio::test]
-    // async fn test_e2e() {
-    //     let bind_ip = String::from("127.0.0.1");
-    //     let port: u16 = 2121;
-    //     let (temp_dir_path, file_name) =
-    //         crate::tests::common::test_server::mkfile().await.expect("Failed to create temp file...");
-    //
-    //     let s = Arc::new(<Server as FTPRunner>::new(temp_dir_path.clone(), bind_ip.clone(), port));
-    //     let cmd = format!("wget -t2 -T1 {}://{}:{}/{} -O /tmp/out.txt",
-    //                       s.protocol.to_string(), bind_ip.clone(), port, file_name);
-    //
-    //     crate::tests::common::test_server::test_server_e2e(s, cmd).await;
-    // }
-// }
-
-
 #[cfg(test)]
 mod tests {
     use std::time::Duration;

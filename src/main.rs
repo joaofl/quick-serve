@@ -106,7 +106,8 @@ async fn main() {
     // 
     // Spin the runners to wait for any potential server start
     if cli_args.tftp.is_some() {
-        let tftp_server = Arc::new(<Server as TFTPServerRunner>::new());
+        let port = cli_args.tftp.unwrap() as u16;
+        let tftp_server = Arc::new(<Server as TFTPServerRunner>::new(path.clone(), bind_ip.clone(), port));
         let tftp_server_c = tftp_server.clone();
 
         spawned_servers.push(tftp_server.clone());
@@ -132,7 +133,6 @@ async fn main() {
         let ftp_server_c = ftp_server.clone();
 
         spawned_servers.push(ftp_server.clone());
-
         spawned_runners.push(
             tokio::spawn(async move {
                 FTPRunner::runner(ftp_server.deref()).await
@@ -158,7 +158,6 @@ async fn main() {
         let server_c = server.clone();
 
         spawned_servers.push(server.clone());
-
         spawned_runners.push(
             tokio::spawn(async move {
                 HTTPRunner::runner(server).await

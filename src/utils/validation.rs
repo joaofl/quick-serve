@@ -18,6 +18,17 @@ pub fn validate_ip_port(ip: &str, port: u16) -> Result<(), String> {
     }
 }
 
+pub fn ensure_trailing_slash(path: &PathBuf) -> PathBuf {
+    if !path.ends_with("/") { 
+        let mut p = path.clone().into_os_string();
+        p.push("/"); 
+        return p.into();
+    }
+    else {
+        return path.into();
+    }
+}
+
 
 pub fn validate_path(path: &PathBuf) -> Result<(), String> {
     if path.exists() && path.is_dir() {
@@ -37,6 +48,15 @@ mod tests {
     fn test_valid_ip_port() {
         let result = validate_ip_port("127.0.0.1", 8080);
         assert!(result.is_ok(), "Expected Ok, got {:?}", result);
+    }
+
+    #[test]
+    fn test_ensure_trailing_slash() {
+        let result = ensure_trailing_slash(&PathBuf::from("/tmp"));
+        assert_eq!(result, PathBuf::from("/tmp/"));
+
+        let result = ensure_trailing_slash(&PathBuf::from("/tmp/"));
+        assert_eq!(result, PathBuf::from("/tmp/"));
     }
 
     #[test]
