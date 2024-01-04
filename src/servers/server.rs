@@ -62,18 +62,6 @@ impl Server {
         Ok(())
     }
 
-
-    // pub fn stop(&self){
-    //     // Stop serving, but continues the loop listening
-    //     // to messages to potentially re-start serving
-    //     let mut m = Message::default();
-    //     m.connect = false;
-    //     m.terminate = false;
-    //
-    //     info!("Stopping {} server", self.protocol.to_string());
-    //     let _ = self.sender.send(m);
-    // }
-
     pub fn terminate(&self){
         // Stop the serving loop to exit the application. 
         // Mostly required by the headless version (single sessions).

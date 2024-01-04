@@ -65,30 +65,20 @@ impl HTTPRunner for Server {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-    use assert_cmd::Command;
-    use std::thread;
+    use crate::utils;
+    use utils::test_utils::tests::*;
+    use crate::servers::Protocol;
 
     #[test]
-    fn test_e2e() {
-        let server = thread::spawn(|| {
-            let mut cmd = Command::cargo_bin("any-serve").unwrap();
-            cmd.timeout(Duration::from_secs(1));
-            cmd.args(&["--http", "-v"]);
-            cmd.unwrap()
-        });
+    fn e2e() {
+        let proto = Protocol::Http;
+        let port = 8089u16;
+        let file_in = "data.bin";
+        let file_out = "/tmp/data-out-http.bin";
+        let dl_cmd = format!("wget -t2 -T1 {}://127.0.0.1:{}/{} -O {}", proto.to_string(), port, file_in, file_out);
 
-        let client = thread::spawn(|| {
-            let mut cmd = Command::new("wget");
-            cmd.env("PATH", "/bin");
-            cmd.args(&["-t2", "-T1", "http://127.0.0.1:8080/in.txt", "-O", "/tmp/out.txt"]);
-            cmd.unwrap()
-        });
-
-        let _ = server.join();
-        client.join().unwrap();
+        test_server_e2e(proto, port, dl_cmd, file_in, file_out);
     }
 }

@@ -70,28 +70,19 @@ impl FTPRunner for Server {
 /////////////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-    use assert_cmd::Command;
-    use std::thread;
+    use crate::utils;
+    use utils::test_utils::tests::*;
+    use crate::servers::Protocol;
 
     #[test]
-    fn test_e2e() {
-        let server = thread::spawn(|| {
-            let mut cmd = Command::cargo_bin("any-serve").unwrap();
-            cmd.timeout(Duration::from_secs(2));
-            cmd.args(&["--ftp", "-v"]);
-            cmd.unwrap()
-        });
+    fn e2e() {
+        let proto = Protocol::Ftp;
+        let port = 2223u16;
+        let file_in = "data.bin";
+        let file_out = "/tmp/data-out-ftp.bin";
+        let dl_cmd = format!("wget -t2 -T1 {}://127.0.0.1:{}/{} -O {}", proto.to_string(), port, file_in, file_out);
 
-        let client = thread::spawn(|| {
-            thread::sleep(Duration::from_millis(1000));
-            let mut cmd = Command::new("wget");
-            cmd.env("PATH", "/bin");
-            cmd.args(&["-t2", "-T1", "ftp://127.0.0.1:2121/in.txt", "-O", "/tmp/out.txt"]);
-            cmd.unwrap()
-        });
+        test_server_e2e(proto, port, dl_cmd, file_in, file_out);
 
-        let _ = server.join();
-        client.join().unwrap();
     }
 }

@@ -1,8 +1,7 @@
 use log::{info, debug};
 
-use super::Server;
+use super::{Protocol, Server};
 use async_trait::async_trait;
-use crate::servers::Protocol;
 
 // Create the TFTP server.
 use async_tftp::server::TftpServerBuilder;
@@ -65,29 +64,21 @@ impl TFTPServerRunner for Server {
     }
 }
 
+
+
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-    use assert_cmd::Command;
-    use std::thread;
+    use crate::utils::test_utils::tests::*;
+    use crate::servers::Protocol;
 
     #[test]
-    fn test_e2e() {
-        let server = thread::spawn(|| {
-            let mut cmd = Command::cargo_bin("any-serve").unwrap();
-            cmd.timeout(Duration::from_secs(1));
-            cmd.args(&["--tftp", "-v"]);
-            cmd.unwrap()
-        });
+    fn e2e() {
+        let proto = Protocol::Tftp;
+        let port = 6958u16;
+        let file_in = "data.bin";
+        let file_out = "/tmp/data-out-tftp.bin";
+        let dl_cmd = format!("tftp 127.0.0.1 {} -m binary -c get {} {} -v", port, file_in, file_out);
 
-        let client = thread::spawn(|| {
-            let mut cmd = Command::new("tftp");
-            cmd.env("PATH", "/bin");
-            cmd.args(&["127.0.0.1", "6969", "-c", "get", "in.txt"]);
-            cmd.unwrap()
-        });
-
-        let _ = server.join();
-        client.join().unwrap();
+        test_server_e2e(proto, port, dl_cmd, file_in, file_out);
     }
 }
