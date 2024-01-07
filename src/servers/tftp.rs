@@ -74,10 +74,10 @@ mod tests {
     #[test]
     fn e2e() {
         let proto = Protocol::Tftp;
-        let port = 6958u16;
+        let port = 6966u16;
         let file_in = "data.bin";
         let file_out = "/tmp/data-out-tftp.bin";
-        let dl_cmd = format!("tftp 127.0.0.1 {} -m binary -c get {} {} -v", port, file_in, file_out);
+        let dl_cmd = format!("tftp 127.0.0.1 {} -m binary -c get {} {}", port, file_in, file_out);
 
         test_server_e2e(proto, port, dl_cmd, file_in, file_out);
     }
