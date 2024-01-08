@@ -40,12 +40,6 @@ struct Cli {
     )] verbose: u8,
 
     #[arg(
-        help = "Start the DHCP server",
-        short, long, required = false, 
-        num_args = 0,
-    )] dhcp: bool,
-
-    #[arg(
         default_missing_value = "8080",
         help = "Start the HTTP server [default port: 8080]",
         short = 'H', long, required = false, 
@@ -170,25 +164,6 @@ async fn main() {
         );
     }
 
-
-    ///////////////////////////////////////////////////////////////////////////////
-    // 
-    // DHCP from here on
-    // 
-    // Spin the runners to wait for any potential server start
-    if cli_args.dhcp {
-        let dhcp_server = Arc::new(<Server as DHCPServerRunner>::new());
-        let dhcp_server_c = dhcp_server.clone();
-
-        spawned_servers.push(dhcp_server.clone());
-        spawned_runners.push(
-            tokio::spawn(async move {
-            DHCPServerRunner::runner(dhcp_server.deref()).await
-            })
-        );
-
-        let _ = dhcp_server_c.start();
-    }
     //////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
 
