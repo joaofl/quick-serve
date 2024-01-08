@@ -67,8 +67,7 @@ impl HTTPRunner for Server {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils;
-    use utils::test_utils::tests::*;
+    use crate::tests::common::tests::*;
     use crate::servers::Protocol;
 
     #[test]

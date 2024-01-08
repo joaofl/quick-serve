@@ -54,7 +54,7 @@ impl FTPRunner for Server {
                         }
                         debug!("Gracefully terminating the FTP server");
                         //Give 10 seconds to potential ongoing connections to finish, otherwise finish immediately
-                        libunftp::options::Shutdown::new().grace_period(Duration::from_secs(10))
+                        libunftp::options::Shutdown::new().grace_period(Duration::from_secs(5))
                     });
 
                 // Spin and await the actual server here
@@ -70,8 +70,7 @@ impl FTPRunner for Server {
 /////////////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
-    use crate::utils;
-    use utils::test_utils::tests::*;
+    use crate::tests::common::tests::*;
     use crate::servers::Protocol;
 
     #[test]

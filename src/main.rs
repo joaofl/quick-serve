@@ -192,6 +192,7 @@ async fn main() {
 mod tests {
     use predicates::prelude::*;
     use assert_cmd::Command;
+    pub mod common;
 
     #[test]
     fn test_cli_help() {

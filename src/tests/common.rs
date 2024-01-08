@@ -1,71 +1,93 @@
 
 #[cfg(test)]
-pub mod test_server {
-    use log::{info};
-    use async_process::Command;
-    use crate::servers::{Server, FTPRunner};
+pub mod tests {
     use std::fs::{File};
     use std::io::{Write};
-    use std::{sync::Arc, path::PathBuf};
-    use std::io::Error;
-    use std::ops::Deref;
-    use tokio::time::{self, Duration};
-    use std::string::String;
+    use std::path::PathBuf;
+    use clap::Error;
+    use tempfile::Builder;
+    use sha2::{Digest, Sha256};
+    use std::{fs, io, thread};
+    use std::time::Duration;
+    use assert_cmd::Command;
+    use rand::Rng;
+    use crate::servers::Protocol;
 
-    async fn run_cmd(cmd: &String) -> Result<String, String> {
-        info!("Running command: {}", cmd);
-
-        let output = Command::new("sh")
-            .arg("-c")
-            .arg(cmd)
-            .output().await
-            .expect("failed to execute process");
-
-        // let out = String::from_utf8_lossy(&output.stdout).deref().to_string();
-        let err = String::from_utf8_lossy(&output.stderr).deref().to_string();
-        // print!("{}", err);
-        if output.status.success() { Ok(err) } else { Err(err) }
-    }
-
-    pub async fn mkfile() -> Result<(PathBuf, String), Error> {
+    pub fn make_tmp(filename: &str) -> Result<PathBuf, Error> {
         // Create a temporary directory
-        let temp_dir_path = PathBuf::from("/tmp/any_serve");
+        let temp_dir = Builder::new().tempdir()?;
 
-        let cmd = &format!("mkdir --parents --verbose {}", &temp_dir_path.to_string_lossy());
-        let _r = run_cmd(cmd).await;
+        // Generate random data
+        let n_bytes = 1000;
+        let mut rng = rand::thread_rng();
+        let data: Vec<u8> = (0..n_bytes).map(|_| rng.gen()).collect();
 
         // Create a file inside the temporary directory
-        let file_name = String::from("in.txt");
-        let file_path = temp_dir_path.join(file_name.clone());
+        let file_path = temp_dir.path().join(filename);
         let mut file = File::create(&file_path)?;
 
-        // Write some data to the file
-        let some_text = "Hello, this is some known data written to the file!";
-        write!(file, "{}\n", some_text.repeat(100))?;
+        file.write_all(&data)?;
+        // Write random text to the file
+        // writeln!(file, "{}" ,data)?;
 
-        info!("Temporary directory: {:?}", temp_dir_path);
-        info!("File path: {:?}", file_path);
+        // Get the directory path as a String
+        let dir_path = temp_dir.into_path();
 
-        Ok((temp_dir_path, file_name))
+        Ok(dir_path)
     }
 
-    pub async fn test_server_e2e(s: Arc<Server>, cmd: String) {
-        let sc = s.clone();
-        let runner = tokio::spawn(async move {
-            sc.deref().runner().await;
+
+    pub fn compare_files(f1: &PathBuf, f2: &PathBuf) -> Result<bool, Error> {
+        let mut file1 = fs::File::open(&f1)?;
+        let mut file2 = fs::File::open(&f2)?;
+
+        let mut hasher = Sha256::new();
+        let _ = io::copy(&mut file1, &mut hasher)?;
+        let h1 = hasher.finalize();
+
+        let mut hasher = Sha256::new();
+        let _ = io::copy(&mut file2, &mut hasher)?;
+        let h2 = hasher.finalize();
+
+        Ok(h1 == h2)
+    }
+
+
+    pub fn test_server_e2e(proto: Protocol, port: u16, dl_cmd: String, file_in: &str, file_out: &str) {
+        // let file_name = "data.bin";
+        let dir_path=  make_tmp(file_in).unwrap();
+        let dir_path_c = dir_path.clone();
+
+        let server = thread::spawn(move || {
+            let mut cmd = Command::cargo_bin("any-serve").unwrap();
+            let arg_str = format!("-p={} -b=127.0.0.1 -v --{}={}", dir_path.to_str().unwrap(), proto.to_string(), port);
+            println!("Running cmd: {}", arg_str);
+            cmd.timeout(Duration::from_secs(2));
+            cmd.args(arg_str.split_whitespace());
+            cmd.unwrap()
         });
 
-        time::sleep(Duration::from_millis(100)).await;
-        let _ = s.start();
-        let r = run_cmd(&cmd).await;
-        assert!(r.is_ok(), "Failed to download with error: {}", r.unwrap());
+        let client = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(700));
 
-        time::sleep(Duration::from_millis(100)).await;
-        let _ = s.terminate();
-        let r = run_cmd(&cmd).await;
-        assert!(r.is_err(), "Succeed to download. Server not terminated");
+            let mut cmd = Command::new("sh");
+            cmd.timeout(Duration::from_secs(3));
+            cmd.arg("-c");
+            cmd.arg(&dl_cmd);
+            cmd.env("PATH", "/bin");
+            cmd.unwrap()
+        });
 
-        let _ = runner.await;
+        let out_client = client.join();
+        assert!(out_client.is_ok(), "Download failed: {:?}", out_client);
+
+        // The result here is always an error as the server gets killed.
+        let out_server = server.join();
+        assert!(out_server.is_err(), "Server exited gracefully while it should have not: {:?}", out_server);
+
+        let file_in = dir_path_c.join(file_in);
+        let r = compare_files(&file_in, &PathBuf::from(file_out)).unwrap();
+
+        assert!(r, "Content of files served and downloaded are not the same!");
     }
 }
-
