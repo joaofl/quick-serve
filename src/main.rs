@@ -14,7 +14,7 @@ extern crate ctrlc;
 extern crate core;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Any-serve", long_about = "Developers swiss-knife of quick file serving")]
+#[command(author, version, about = "Any-serve", long_about = "Instant file serving made easy")]
 struct Cli {
     
     #[arg(
