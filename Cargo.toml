@@ -9,7 +9,7 @@ edition = "2021"
 # TODO: Put only the used features
 tokio = { version = "1.35.1", features = ["full"]}
 futures = "0.3.30"
-async-trait = "0.1.75"
+async-trait = "0.1.77"
 
 # FTP server deps
 libunftp = "0.19.1"
@@ -28,11 +28,14 @@ log = "0.4.20"
 env_logger = "0.10.1"
 
 # For the headless version
-clap = { version = "4.4.11", features = ["derive"] }
+clap = { version = "4.4.13", features = ["derive"] }
 ctrlc = "3.4.2"
+sha2 = "0.10.8"
 
 [dev-dependencies]
-tempfile = "3.8.1"
+sha2 = "0.10.8"
+tempfile = "3.9.0"
+rand = "0.8.5"
 assert_cmd = "2.0.12"
 predicates = "3.0.4"
 
