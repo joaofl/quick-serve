@@ -8,7 +8,6 @@ use std::{path::PathBuf};
 pub enum Protocol {
     Http,
     Tftp,
-    Dhcp,
     Ftp,
     #[default]
     None,
@@ -20,7 +19,6 @@ impl Protocol {
             Protocol::Http => "http",
             Protocol::Ftp  => "ftp",
             Protocol::Tftp => "tftp",
-            Protocol::Dhcp => "dhcp",
             _ => "none",
         }
     }

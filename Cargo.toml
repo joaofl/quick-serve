@@ -23,9 +23,6 @@ hyper = { version = "0.14.28", features = ["full"] }
 tower-http = { version = "0.4.4", features = ["full"] }
 tower = { version = "0.4.13", features = ["full"] }
 
-# DHCP
-dhcp4r = "0.2.3"
-
 # Log related
 log = "0.4.20"
 env_logger = "0.10.1"
