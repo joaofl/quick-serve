@@ -1,9 +1,9 @@
-[![Build Status](https://github.com/joaofl/any-serve/actions/workflows/rust.yml/badge.svg)](https://github.com/joaofl/any-serve/actions/workflows/rust.yml)
-![](https://tokei.rs/b1/github/joaofl/any-serve?category=code)
-[![](https://deps.rs/repo/github/joaofl/any-serve/status.svg)](https://deps.rs/repo/github/joaofl/any-serve)
+[![Build Status](https://github.com/joaofl/quick-serve/actions/workflows/rust.yml/badge.svg)](https://github.com/joaofl/quick-serve/actions/workflows/rust.yml)
+![](https://tokei.rs/b1/github/joaofl/quick-serve?category=code)
+[![](https://deps.rs/repo/github/joaofl/quick-serve/status.svg)](https://deps.rs/repo/github/joaofl/quick-serve)
 
 
-# Any-serve
+# Quick-serve
 No setup, zero-config, multi-platform, multi-protocol, standalone server for developers or whoever wants to promptly 
 serve some files over the network.
 

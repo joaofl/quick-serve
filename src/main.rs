@@ -14,7 +14,7 @@ extern crate ctrlc;
 extern crate core;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Any-serve", long_about = "Instant file serving made easy")]
+#[command(author, version, about = "Quick-serve", long_about = "Instant file serving made easy")]
 struct Cli {
     
     #[arg(
@@ -196,8 +196,8 @@ mod tests {
 
     #[test]
     fn test_cli_help() {
-        let mut cmd = Command::cargo_bin("any-serve").unwrap();
+        let mut cmd = Command::cargo_bin("quick-serve").unwrap();
         cmd.arg("--help");
-        cmd.assert().success().stdout(predicate::str::contains("Usage: any-serve"));
+        cmd.assert().success().stdout(predicate::str::contains("Usage: quick-serve"));
     }
 }

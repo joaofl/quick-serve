@@ -59,7 +59,7 @@ pub mod tests {
         let dir_path_c = dir_path.clone();
 
         let server = thread::spawn(move || {
-            let mut cmd = Command::cargo_bin("any-serve").unwrap();
+            let mut cmd = Command::cargo_bin("quick-serve").unwrap();
             let arg_str = format!("-p={} -b=127.0.0.1 -v --{}={}", dir_path.to_str().unwrap(), proto.to_string(), port);
             println!("Running cmd: {}", arg_str);
             cmd.timeout(Duration::from_secs(2));
