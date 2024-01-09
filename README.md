@@ -1,4 +1,5 @@
 [![Build Status](https://github.com/joaofl/quick-serve/actions/workflows/rust.yml/badge.svg)](https://github.com/joaofl/quick-serve/actions/workflows/rust.yml)
+[![crates.io](https://img.shields.io/crates/v/quick-serve.svg)](https://crates.io/crates/quick-serve)
 ![](https://tokei.rs/b1/github/joaofl/quick-serve?category=code)
 [![](https://deps.rs/repo/github/joaofl/quick-serve/status.svg)](https://deps.rs/repo/github/joaofl/quick-serve)
 
@@ -15,7 +16,7 @@ devices in the course of various development tasks. Whether the objective is upg
 Kernel from the bootloader, retrieving packages from remote repositories, fetching a Git repository or sharing files with 
 your colleague next desk, the constant requirement is a quick and straightforward file server. The capability to promptly 
 set up an FTP, TFTP, or HTTP server proves to be a time-saving and efficient solution in navigating the most diverse 
-embedded systems development scenarios.
+file exchange scenarios.
 
 I developed this application as an exercise in learning Rust because I couldn't find a solution that seamlessly served 
 multiple protocols, was headless, and supported various platforms. Unlike many dedicated servers tailored for either 
@@ -51,10 +52,9 @@ Options:
 
   -V, --version
           Print version
-
 ```
 
-## Wishlist
+## Features and To-do List
 
 - [x] FTP 
 - [x] HTTP
@@ -63,10 +63,12 @@ Options:
 - [ ] SFTP 
 - [x] Headless version
 - [ ] User interface
-- [ ] Timout
+- [ ] Serve N files and exit
+- [ ] Timeout
 - [ ] Show transfer rate
 - [ ] Color-code logs according to protocol
 - [ ] Add logs filter levels and source
+- [ ] Refine on each protocol's specific logs
 
 ## Compiling on Ubuntu 22.04
 

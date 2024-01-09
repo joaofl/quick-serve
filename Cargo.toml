@@ -4,6 +4,12 @@ authors =  ["João Loureiro"]
 name = "quick-serve"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/joaofl/quick-serve"
+homepage = "https://github.com/joaofl/quick-serve"
+description = "Quick-serve: A zero-config, multi-platform, multi-protocol standalone server for a prompt file serving."
+categories = ["networking", "command-line-utilities", "development-tools"]
+
 
 [dependencies]
 # TODO: Put only the used features
