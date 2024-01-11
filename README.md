@@ -58,21 +58,42 @@ Options:
 
 - [x] FTP 
 - [x] HTTP
+- [ ] HTTPS
 - [x] TFTP 
 - [ ] DHCP 
 - [ ] SFTP 
 - [x] Headless version
 - [ ] User interface
 - [ ] Serve N files and exit
-- [ ] Timeout
-- [ ] Show transfer rate
+- [ ] Serve for t seconds
+- [ ] Report transfer rate
 - [ ] Color-code logs according to protocol
-- [ ] Add logs filter levels and source
+- [ ] Add log filtering options
 - [ ] Refine on each protocol's specific logs
 
 ## Compiling on Ubuntu 22.04
+
+Dependencies
+
+```
+https://tauri.app/v1/guides/getting-started/prerequisites/
+```
+
+Fedora
+```bash
+sudo dnf check-update
+sudo dnf install webkit2gtk4.0-devel \
+    openssl-devel \
+    curl \
+    wget \
+    file \
+    libappindicator-gtk3-devel \
+    librsvg2-devel
+sudo dnf group install "C Development Tools and Libraries"
+```
 
 Build and run:
 ```bash
 cargo build --release
 ```
+

@@ -2,7 +2,7 @@
 [package]
 authors =  ["João Loureiro"]
 name = "quick-serve"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/joaofl/quick-serve"
@@ -10,10 +10,22 @@ homepage = "https://github.com/joaofl/quick-serve"
 description = "Quick-serve: A zero-config, multi-platform, multi-protocol standalone server for a prompt file serving."
 categories = ["networking", "command-line-utilities", "development-tools"]
 
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[features]
+# this feature is used for production builds or when `devPath` points to the filesystem
+# DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]
 
 [dependencies]
+# UI related
+tauri = { version = "1.5", features = ["shell-open"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
 # TODO: Put only the used features
-tokio = { version = "1.35.1", features = ["full"]}
+tokio = { version = "1.35.1", features = ["full"] }
 futures = "0.3.30"
 async-trait = "0.1.77"
 

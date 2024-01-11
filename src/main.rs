@@ -1,4 +1,6 @@
 // #![allow(warnings)]
+// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use log::{error, info, warn};
 
@@ -12,6 +14,17 @@ use crate::servers::{*};
 use clap::{Parser};
 extern crate ctrlc;
 extern crate core;
+
+// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
+#[tauri::command]
+fn greet(name: &str) -> String {
+    format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
+#[tauri::command]
+fn rb_toggled(v: bool) {
+  println!("RB toggled to {}", v);
+}
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Quick-serve", long_about = "Instant file serving made easy")]
@@ -93,6 +106,13 @@ async fn main() {
     let bind_ip = cli_args.bind_ip;
     let path = cli_args.serve_dir;
 
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            rb_toggled,
+            ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 
     ///////////////////////////////////////////////////////////////////////////////
     // 
