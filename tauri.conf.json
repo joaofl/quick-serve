@@ -24,10 +24,8 @@
       "identifier": "com.tauri.dev",
       "icon": [
         "src/ui/icons/32x32.png",
-        "src/ui/icons/128x128.png",
-        "src/ui/icons/128x128@2x.png",
-        "src/ui/icons/icon.icns",
-        "src/ui/icons/icon.ico"
+        "src/ui/icons/16x16.png",
+        "src/ui/icons/96x96.png"
       ]
     },
     "security": {
