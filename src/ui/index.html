@@ -2,103 +2,25 @@
 <html lang="en">
 
 <head>
-  
-  <link rel="stylesheet" type="text/css" href="semantic/semantic.min.css">
-  <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
-  <script src="semantic/semantic.min.js"></script>
+   <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
   <script type="module" src="/main.js" defer></script>
-
-
 </head>
 
 <body style="padding: 30px;">
 
-  <h4 class="ui header">Quick-serve</h4>
+  <input type="file" class="file-input file-input-bordered file-input-sm w-full max-w" />
 
-  <div class="ui grid">
-    <!-- ################ -->
-    <div class="one column row">
-      <div class="wide column">
-        <div class="ui fluid action input">
-          <input type="text" placeholder="Chose a directory to serve...">
-          <div class="ui button"> <i class="ui folder open icon"></i> </div>
-        </div>
-      </div>
+  <div class="form-control">
+    <div class="flex justify-normal">
+        <span class="label-text">FTP</span> 
+        <input type="checkbox" class="toggle" checked />
+        <input type="number" placeholder="" class="input input-bordered input-sm w-full max-w-xs" />
     </div>
-    <!-- ################ -->
-    <div class="two column row">
-      <!-- ## -->
-      <!-- <div class="five wide column">
-        <div class="ui input focus">
-          <input type="text" placeholder="Bind IP">
-        </div>
-      </div> -->
-      <!-- ## -->
-      <!-- <div class="five wide column">
-        <div class="ui input focus">
-          <input type="text" placeholder="Port">
-        </div>
-      </div> -->
+  </div>
 
+  <textarea placeholder="Bio" class="textarea textarea-bordered textarea-lg w-full max-w" ></textarea>
 
-      <div class="ui form">
-        <div class="inline fields">
-          <label>Bind IP</label>
-          <div class="field">
-            <input type="text" placeholder="eg: 127.0.0.1">
-          </div>
-          <label>Port</label>
-          <div class="field">
-            <input type="text" placeholder="xxx">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ################ -->
-
-    <form class="row" id="greet-form">
-      <input id="greet-input" placeholder="Enter a name..." />
-      <button type="submit">Greet</button>
-    </form>
-
-    <p id="greet-msg"></p>
-
-    <!-- ################ -->
-    <div class="row">
-      <!-- ## -->
-      <div class="three wide column">
-        <div class="ui toggle checkbox">
-          <input id="cbHTTP" type="checkbox" name="public" onchange="handleCheckboxChange()"> 
-          <label for="cbHTTP">HTTP</label>
-        </div>
-      </div>
-      <!-- ## -->
-      <div class="three wide column">
-        <div class="ui toggle checkbox">
-          <input type="checkbox" name="public"> <label>FTP</label>
-        </div>
-      </div>
-      <!-- ## -->
-      <div class="three wide column">
-        <div class="ui toggle checkbox">
-          <input type="checkbox" name="public"> <label>TFTP</label>
-        </div>
-      </div>
-      <!-- ## -->
-    </div>
-    <!-- ################ -->
-    <div class="large row">
-      <div class="wide column">
-        <div class="ui form">
-          <div class="field">
-            <label>Logs:</label>
-            <textarea id="myTextArea" disabled></textarea>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- ################ -->
-  </div> <!-- <div class="ui grid"> -->
 </body>
 </html>
