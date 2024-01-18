@@ -65,7 +65,7 @@ Options:
 - [x] Headless version
 - [ ] User interface
 - [ ] Serve N files and exit
-- [ ] Serve for t seconds
+- [ ] Serve for t seconds and exit
 - [ ] Report transfer rate
 - [ ] Color-code logs according to protocol
 - [ ] Add log filtering options
@@ -80,7 +80,7 @@ https://tauri.app/v1/guides/getting-started/prerequisites/
 ```
 
 Fedora
-```bash
+```sh
 sudo dnf check-update
 sudo dnf install webkit2gtk4.0-devel \
     openssl-devel \
@@ -93,7 +93,7 @@ sudo dnf group install "C Development Tools and Libraries"
 ```
 
 Build and run:
-```bash
+```sh
 cargo build --release
 ```
 
