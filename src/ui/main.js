@@ -11,6 +11,14 @@ async function greet() {
 }
 
 
+$(document).ready(function() {
+  $('#toggleButton').click(function() {
+    // Toggle between open and closed box icons
+    $(this).find('i').toggleClass('fa-box-open fa-box');
+  });
+});
+
+
 function handleCheckboxChange() {
   document.getElementById("myTextArea").value += "Something cool\n";
   var checkbox = document.getElementById('cbHTTP');
