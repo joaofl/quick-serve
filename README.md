@@ -71,6 +71,12 @@ Options:
 - [ ] Add log filtering options
 - [ ] Refine on each protocol's specific logs
 
+## Installing
+
+```sh
+cargo install quick-serve
+```
+
 ## Compiling on Ubuntu 22.04
 
 Dependencies
