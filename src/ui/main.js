@@ -11,11 +11,11 @@ async function greet() {
 }
 
 
-$(document).ready(function() {
-  $('#toggleButton').click(function() {
+$(document).ready(function () {
+  $('#toggleButton').click(function () {
     // Toggle between open and closed box icons
     $(this).find('i').toggleClass('fa-box-open fa-box');
-  });
+  });  
 });
 
 
@@ -26,23 +26,23 @@ function handleCheckboxChange() {
 }
 
 // Wait for the document to be ready before running JavaScript/jQuery
-    $(document).ready(function () {
-      // Initialize Semantic UI checkbox
-      $('.ui.checkbox').checkbox();
+$(document).ready(function () {
+  // Initialize Semantic UI checkbox
+  $('.ui.checkbox').checkbox();
 
-      // Handle checkbox change event
-      $('.ui.checkbox').change(function () {
-        if ($(this).checkbox('is checked')) {
-          console.log("Checkbox is checked");
-          document.getElementById("myTextArea").value += "Something cool\n";
+  // Handle checkbox change event
+  $('.ui.checkbox').change(function () {
+    if ($(this).checkbox('is checked')) {
+      console.log("Checkbox is checked");
+      document.getElementById("myTextArea").value += "Something cool\n";
 
-          // Perform actions or call other functions when the checkbox is checked
-        } else {
-          console.log("Checkbox is unchecked");
-          // Perform actions or call other functions when the checkbox is unchecked
-        }
-      });
-    });
+      // Perform actions or call other functions when the checkbox is checked
+    } else {
+      console.log("Checkbox is unchecked");
+      // Perform actions or call other functions when the checkbox is unchecked
+    }
+  });
+});
 
 window.addEventListener("DOMContentLoaded", () => {
   greetInputEl = document.querySelector("#greet-input");
