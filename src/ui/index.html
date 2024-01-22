@@ -28,29 +28,20 @@
       <div id="app"></div>
       <script id="entry-template" type="text/x-handlebars-template">
         {{#each protocol}}
-          <div class="flex flex-row space-x-1">
-
-            <div>
-              <p class="label">{{ name }}</p>
-            </div>
-
-            <div>
-              <input type="number" placeholder="{{ port }}" class="input input-sm input-bordered w-20" />
-            </div>
-           
-            <div>
-              <label class="btn btn-sm swap swap-rotate">
-                <input type="checkbox" />
-                <div class="swap-on">START</div>
-                <div class="swap-off">STOP</div>
-              </label>
-            </div>
+          <div class="join">
+            <p class="text-md join-item font-semibold bg-blueGray-200 w-12">{{ name }}</p>
+            <input type="number" placeholder="{{ port }}" class="input join-item input-sm input-bordered w-20" />
+            <label class="btn join-item btn-sm swap swap-rotate">
+              <input type="checkbox" />
+              <div class="swap-on">START</div>
+              <div class="swap-off">STOP</div>
+            </label>
           </div>
         {{/each}}
       </script>
     </div>
 
-    <textarea placeholder="Bio" class="textarea textarea-bordered textarea-lg w-full max-w"></textarea>
+    <textarea placeholder="Logs" class="textarea textarea-bordered textarea-lg w-full max-w"></textarea>
 
   </div>
 
