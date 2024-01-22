@@ -23,6 +23,18 @@ multiple protocols, was headless, and supported various platforms. Unlike many d
 Windows or Linux, with or without a UI, my app aims to bridge the gap by offering a versatile, multi-platform, and 
 protocol-agnostic solution.
 
+## Install
+
+```sh
+cargo install quick-serve
+```
+
+## Build
+
+```sh
+cargo build --release
+```
+
 ## Usage
 
 ```shell
@@ -54,25 +66,20 @@ Options:
           Print version
 ```
 
-## Features and To-do List
+## Features
 
 - [x] FTP 
 - [x] HTTP
+- [ ] HTTPS
 - [x] TFTP 
 - [ ] DHCP 
 - [ ] SFTP 
 - [x] Headless version
 - [ ] User interface
 - [ ] Serve N files and exit
-- [ ] Timeout
-- [ ] Show transfer rate
+- [ ] Serve for t seconds and exit
+- [ ] Report transfer rate
 - [ ] Color-code logs according to protocol
-- [ ] Add logs filter levels and source
+- [ ] Add log filtering options
 - [ ] Refine on each protocol's specific logs
 
-## Compiling on Ubuntu 22.04
-
-Build and run:
-```bash
-cargo build --release
-```
