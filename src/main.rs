@@ -1,4 +1,5 @@
 // #![allow(warnings)]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use log::{error, info, warn};
 
@@ -12,6 +13,10 @@ use crate::servers::{*};
 use clap::{Parser};
 extern crate ctrlc;
 extern crate core;
+
+#[cfg(feature = "ui")] mod ui;
+#[cfg(feature = "ui")] use crate::ui::window::MyApp;
+
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Quick-serve", long_about = "Instant file serving made easy")]
@@ -81,6 +86,22 @@ async fn main() {
     env_logger::builder()
         .format_timestamp_secs()
         .init();
+
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
+    #[cfg(feature = "ui")]{
+        let options = eframe::NativeOptions {
+            viewport: egui::ViewportBuilder::default()
+                .with_inner_size([640.0, 240.0]) // wide enough for the drag-drop overlay text
+                .with_drag_and_drop(true),
+            ..Default::default()
+        };
+        eframe::run_native(
+            "Native file dialogs and drag-and-drop files",
+            options,
+            Box::new(|_cc| Box::<MyApp>::default()),
+        );
+    }
 
     //////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
