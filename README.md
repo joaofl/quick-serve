@@ -27,7 +27,7 @@ protocol-agnostic solution.
 
 ```sh
 cargo install quick-serve
-quick-serve -h
+quick-serve
 ```
 
 ## Build and Run
@@ -35,8 +35,9 @@ quick-serve -h
 ```sh
 git clone https://github.com/joaofl/quick-serve.git
 cd quick-serve
-cargo run --release -- -h
+cargo run --release
 ```
+Where the `ui` is optional; even if compiled, the ui can still be disabled at runtime.
 
 ## Usage
 
