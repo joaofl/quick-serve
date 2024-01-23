@@ -1,29 +1,85 @@
 use eframe::egui;
+use crate::ui::toggle_switch::toggle;
 
 
 #[derive(Default)]
 pub struct MyApp {
     dropped_files: Vec<egui::DroppedFile>,
     picked_path: Option<String>,
+    toggle_sw: bool,
+    selected: i32,
 }
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label("Drag-and-drop files onto the window!");
 
-            if ui.button("Open file…").clicked() {
-                if let Some(path) = rfd::FileDialog::new().pick_file() {
-                    self.picked_path = Some(path.display().to_string());
-                }
-            }
-
-            if let Some(picked_path) = &self.picked_path {
-                ui.horizontal(|ui| {
-                    ui.label("Picked file:");
-                    ui.monospace(picked_path);
+            ctx.set_pixels_per_point(1.3);
+            // ctx.set
+            ctx.request_repaint();
+            egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+                egui::menu::bar(ui, |ui| {
+                    if ui.button("Quit").clicked() {
+                        std::process::exit(0);
+                    };
+                    egui::ComboBox::from_label("")
+                        .selected_text("Text Size")
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.selected, 1, "Big");
+                            ui.selectable_value(&mut self.selected, 2, "Medium");
+                            ui.selectable_value(&mut self.selected, 3, "Small");
+                        });
                 });
-            }
+            });
+
+            egui::CentralPanel::default().show(ctx, |ui| {
+                // Large button text:
+                if self.selected == 1 {
+                    ctx.style_mut(|style| {
+                        style.text_styles.insert(
+                            egui::TextStyle::Body,
+                            egui::FontId::new(20.0, egui::FontFamily::Proportional),
+                        );
+                    });
+                } else if self.selected == 2 {
+                    ctx.style_mut(|style| {
+                        style.text_styles.insert(
+                            egui::TextStyle::Body,
+                            egui::FontId::new(15.0, egui::FontFamily::Proportional),
+                        );
+                    });
+                } else {
+                    ctx.style_mut(|style| {
+                        style.text_styles.insert(
+                            egui::TextStyle::Body,
+                            egui::FontId::new(10.0, egui::FontFamily::Proportional),
+                        );
+                    });
+                }
+
+                // ui.label("Drag-and-drop files onto the window!");
+    
+                if ui.button("Open file…").clicked() {
+                    if let Some(path) = rfd::FileDialog::new().pick_folder() {
+                        self.picked_path = Some(path.display().to_string());
+                    }
+                }
+    
+                ui.add(toggle(&mut self.toggle_sw));
+    
+                if let Some(picked_path) = &self.picked_path {
+                    ui.horizontal(|ui| {
+                        ui.label("Picked path:");
+                        ui.monospace(picked_path);
+                    });
+                }
+
+                ui.heading("Text:");
+                ui.heading("--------------------");
+                ui.label("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod");
+
+            });
+
 
             // Show dropped files (if any):
             if !self.dropped_files.is_empty() {

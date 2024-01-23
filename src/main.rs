@@ -92,7 +92,7 @@ async fn main() {
     #[cfg(feature = "ui")]{
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
-                .with_inner_size([640.0, 240.0]) // wide enough for the drag-drop overlay text
+                .with_inner_size([500.0, 700.0]) // wide enough for the drag-drop overlay text
                 .with_drag_and_drop(true),
             ..Default::default()
         };
