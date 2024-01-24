@@ -23,62 +23,63 @@ multiple protocols, was headless, and supported various platforms. Unlike many d
 Windows or Linux, with or without a UI, my app aims to bridge the gap by offering a versatile, multi-platform, and 
 protocol-agnostic solution.
 
-## Install
+## Install and Run
 
 ```sh
 cargo install quick-serve
+quick-serve -h
 ```
 
-## Build
+## Build and Run
 
 ```sh
-cargo build --release
+git clone https://github.com/joaofl/quick-serve.git
+cd quick-serve
+cargo run --release -- -h
 ```
 
 ## Usage
 
 ```shell
+Quick-serve
+
+Usage: quick-serve [OPTIONS]
+
 Options:
-  -b, --bind-ip=<IP>
-          Bind IP [default: 127.0.0.1]
-
-  -p, --serve-dir=<DIR>
-          Path to serve
-          
-          [default: /tmp/]
-
-  -v, --verbose...
-          Verbose logging
-
-  -H, --http[=<PORT>]
-          Start the HTTP server [default port: 8080]
-
-  -f, --ftp[=<PORT>]
-          Start the FTP server [default port: 2121]
-
-  -t, --tftp[=<PORT>]
-          Start the TFTP server [default port: 6969]
-
-  -h, --help
-          Print help (see a summary with '-h')
-
-  -V, --version
-          Print version
+  -b, --bind-ip=<IP>     Bind IP [default: 127.0.0.1]
+  -p, --serve-dir=<DIR>  Path to serve [default: /tmp/]
+  -v, --verbose...       Verbose logging
+  -H, --http[=<PORT>]    Start the HTTP server [default port: 8080]
+  -f, --ftp[=<PORT>]     Start the FTP server [default port: 2121]
+  -t, --tftp[=<PORT>]    Start the TFTP server [default port: 6969]
+  -h, --help             Print help (see more with '--help')
+  -V, --version          Print version
 ```
 
-## Features
+## Implementation Goals
 
-- [x] FTP 
+### Supported Protocols
+- [x] FTP
 - [x] HTTP
+- [x] TFTP
 - [ ] HTTPS
-- [x] TFTP 
-- [ ] DHCP 
-- [ ] SFTP 
-- [x] Headless version
-- [ ] User interface
-- [ ] Serve N files and exit
-- [ ] Serve for t seconds and exit
+- [ ] DHCP
+- [ ] SFTP
+- [ ] NFS
+- [ ] SAMBA
+
+### Interface
+- [x] Command line
+- [ ] Local interface
+- [ ] Web interface
+
+### Functionalities
+- [ ] Serve `n` files and exit
+- [ ] Serve for `t` seconds and exit
+- [ ] Show number of files being served
 - [ ] Report transfer rate
+- [ ] Report transfered files
+- [ ] Show statistics in the end
 - [ ] Color-code logs according to protocol
 - [ ] Add log filtering options
 - [ ] Refine on each protocol's specific logs
