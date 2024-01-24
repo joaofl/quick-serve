@@ -34,7 +34,7 @@ struct Cli {
         help = "Path to serve",
         short = 'p', long, required = false,
         default_value = "/tmp/",
-        value_name = "DIR",
+        value_name = "PATH",
         require_equals = true,
     )] serve_dir: PathBuf,
 
@@ -97,7 +97,7 @@ async fn main() {
             ..Default::default()
         };
         eframe::run_native(
-            "Native file dialogs and drag-and-drop files",
+            "Quick-Serve",
             options,
             Box::new(|_cc| Box::<MyApp>::default()),
         );
