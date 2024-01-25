@@ -64,12 +64,21 @@ impl eframe::App for UI {
             // #######################################################################
             ui.add_space(5.0);
 
-            ui.horizontal(|ui| {
-                ui.label("FTP");
-                ui.add(DragValue::new(&mut self.port_ftp).clamp_range(1..=50000));
-                ui.add(toggle(&mut self.toggle_sw));
+            ui.group(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label("FTP");
+                    ui.add(DragValue::new(&mut self.port_ftp).clamp_range(1..=50000));
+                    ui.add(toggle(&mut self.toggle_sw));
+                });
             });
 
+            ui.group(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label("HTTP");
+                    ui.add(DragValue::new(&mut self.port_ftp).clamp_range(1..=50000));
+                    ui.add(toggle(&mut self.toggle_sw));
+                });
+            });
             // #######################################################################
             ui.add_space(5.0);
             ui.separator();
