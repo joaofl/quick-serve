@@ -15,11 +15,12 @@ extern crate ctrlc;
 extern crate core;
 
 #[cfg(feature = "ui")] mod ui;
-#[cfg(feature = "ui")] use crate::ui::window::MyApp;
+#[cfg(feature = "ui")] use crate::ui::window::UI;
+#[cfg(feature = "ui")] use egui::{Style, Visuals};
 
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Quick-serve", long_about = "Instant file serving made easy")]
+#[command(author, version, about = "Quick-Serve", long_about = "Instant file serving made easy")]
 struct Cli {
     
     #[arg(
@@ -92,14 +93,21 @@ async fn main() {
     #[cfg(feature = "ui")]{
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
-                .with_inner_size([500.0, 700.0]) // wide enough for the drag-drop overlay text
-                .with_drag_and_drop(true),
-            ..Default::default()
+                .with_inner_size([500.0, 700.0]), // wide enough for the drag-drop overlay text
+                ..Default::default()
         };
+
         eframe::run_native(
             "Quick-Serve",
             options,
-            Box::new(|_cc| Box::<MyApp>::default()),
+            Box::new(|cc| {
+                let style = Style {
+                    visuals: Visuals::light(),
+                    ..Style::default()
+                };
+                cc.egui_ctx.set_style(style);
+                Box::new(UI::new(cc))
+            }),
         );
     }
 
