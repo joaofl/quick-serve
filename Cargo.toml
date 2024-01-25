@@ -12,6 +12,7 @@ categories = ["networking", "command-line-utilities", "development-tools"]
 
 [features]
 ui = ["dep:egui", "dep:eframe", "dep:rfd"]
+default = ["ui"]
 
 [dependencies]
 # TODO: Put only the used features
