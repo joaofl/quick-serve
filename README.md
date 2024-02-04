@@ -23,6 +23,18 @@ multiple protocols, was headless, and supported various platforms. Unlike many d
 Windows or Linux, with or without a UI, my app aims to bridge the gap by offering a versatile, multi-platform, and 
 protocol-agnostic solution.
 
+## Dependencies
+
+### Fedora
+```sh
+sudo dnf install glibc2-devel atk-devel cairo-devel pango-devel gdk-pixbuf2-devel gtk3-devel
+```
+
+### Ubuntu
+```sh
+sudo apt install libatk1.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libgtk-3-dev
+```
+
 ## Install and Run
 
 ```sh
@@ -37,7 +49,23 @@ git clone https://github.com/joaofl/quick-serve.git
 cd quick-serve
 cargo run --release
 ```
-Where the `ui` is optional; even if compiled, the ui can still be disabled at runtime.
+
+The `ui` is optional and can be refrained from compilation with:
+
+```sh
+cargo build --release --no-default-features
+```
+
+Even if it is compiled, the UI can still be disabled at runtime.
+
+## Cross compile using cross:
+
+```sh
+cargo install cross
+./cross-build-all
+# or
+cross build --release
+```
 
 ## Usage
 

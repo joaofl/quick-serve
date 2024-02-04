@@ -1,0 +1,12 @@
+[build]
+# image = "ubuntu:latest"
+build-std = false                              # do not build the std library. has precedence over xargo
+xargo = false                                   # enable the use of xargo by default
+zig = false                                    # do not use zig cc for the builds
+default-target = "x86_64-unknown-linux-gnu"    # use this target if none is explicitly provided
+pre-build = [                                  # additional commands to run prior to building the package
+    "apt-get update && apt-get --assume-yes install libcairo2-dev libatk1.0-dev  libpango1.0 gir1.2-pango-1.0 libpango1.0-dev libgtk-3-dev  glib-2.0-dev libglib2.0-dev"
+]
+
+[build.env]
+passthrough = ["PKG_CONFIG_PATH=/usr/lib64/pkgconfig"]

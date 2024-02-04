@@ -11,8 +11,8 @@ for target in "${TARGETS[@]}"; do
     cross build --release --target "$target" --jobs $(nproc)
     echo "$target compilation completed."
 
-    cp -v target/${target}/release/quick-serve     assets/quick-serve-${target} 2>/dev/null
-    cp -v target/${target}/release/quick-serve.exe assets/quick-serve.exe-${target} 2>/dev/null
+    cp -v target/${target}/release/quick-serve     assets/quick-serve-${target}     2>/dev/null
+    cp -v target/${target}/release/quick-serve.exe assets/quick-serve-${target}.exe 2>/dev/null
 done
 
 # Clean up
