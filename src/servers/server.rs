@@ -22,6 +22,14 @@ impl Protocol {
             _ => "none",
         }
     }
+    pub fn get_default_port(&self) -> u16 {
+        match self {
+            Protocol::Http => 8080,
+            Protocol::Ftp  => 2121,
+            Protocol::Tftp => 6969,
+            _ => 0,
+        }
+    }
 }
 
 #[derive(Default, Clone, Debug)]
