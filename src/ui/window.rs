@@ -1,10 +1,17 @@
 use std::default;
+use std::sync::Arc;
 
 use eframe::egui;
 use egui::DragValue;
 use crate::ui::toggle_switch::toggle;
 use crate::servers::server::Protocol;
 use tokio::sync::broadcast;
+
+
+
+use crate::ui::listener;
+
+use super::listener::Logger;
 
 
 pub struct UI {
@@ -46,8 +53,14 @@ impl Default for UI {
 
 
 impl UI {
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        UI::default()
+    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+        let d = UI::default();
+        let e = Arc::new(&d);
+
+        // UI::logger()
+        // d.logger();
+        // d
+        d
     }
 }
 

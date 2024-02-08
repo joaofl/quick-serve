@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use async_tftp::server::TftpServerBuilder;
 use std::path::PathBuf;
 use crate::utils::validation;
-use std::{sync::Arc};
+use std::sync::Arc;
 
 #[async_trait]
 pub trait TFTPServerRunner {
