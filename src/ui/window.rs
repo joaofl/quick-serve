@@ -1,22 +1,13 @@
-use std::default;
 use std::sync::Arc;
 
 use eframe::egui;
 use egui::DragValue;
 use crate::ui::toggle_switch::toggle;
 use crate::servers::server::Protocol;
-use tokio::sync::broadcast;
-
-
-
-use crate::ui::listener;
-
-use super::listener::Logger;
+use egui::mutex::Mutex;
 
 
 pub struct UI {
-    pub sender: broadcast::Sender<String>,
-
     pick_folder: Option<String>,
     aspect_ratio: f32,
     toggle_sw_ftp: bool,
@@ -28,16 +19,17 @@ pub struct UI {
     toggle_sw_http: bool,
     port_http: u16,
 
-    logs: String,
+    pub logs: Arc<Mutex<String>>,
 }
 
 impl Default for UI {
     fn default() -> Self {
         UI {
-            logs: "Edit this text field if you want".to_owned(),
+            logs: Arc::new(Mutex::new(String::from(""))),
+
             pick_folder: Default::default(),
             aspect_ratio: 1.8,
-            sender: broadcast::channel(10).0,
+            // log_sender: broadcast::channel(10).0,
 
             port_ftp: Protocol::get_default_port(&Protocol::Ftp),
             toggle_sw_ftp: Default::default(),
@@ -54,13 +46,7 @@ impl Default for UI {
 
 impl UI {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        let d = UI::default();
-        let e = Arc::new(&d);
-
-        // UI::logger()
-        // d.logger();
-        // d
-        d
+        UI::default()
     }
 }
 
@@ -149,7 +135,13 @@ impl eframe::App for UI {
                     ui.with_layout(
                         egui::Layout::top_down(egui::Align::LEFT).with_cross_justify(true),
                         |ui| {
-                            ui.label(&self.logs);
+
+                            // Acquire the lock
+                            let guard = self.logs.lock();
+                            // Dereference the guard and clone the inner string
+                            let logs_string = (*guard).clone();
+
+                            ui.label(logs_string);
                         },
                     );
                 });

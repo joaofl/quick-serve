@@ -1,18 +1,23 @@
 // #![allow(warnings)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use log::{error, info, warn};
+use log::{error, info, warn, LevelFilter};
 
 use std::path::PathBuf;
 use std::ops::Deref;
 use std::sync::Arc;
 
 mod utils;
+use utils::logger::MyLogger;
+
 mod servers;
 use crate::servers::{*};
-use clap::{Parser};
+
+use clap::Parser;
 extern crate ctrlc;
 extern crate core;
+
+use tokio::sync::broadcast;
 
 #[cfg(feature = "ui")] mod ui;
 #[cfg(feature = "ui")] use crate::ui::window::UI;
@@ -22,7 +27,6 @@ extern crate core;
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Quick-Serve", long_about = "Instant file serving made easy")]
 struct Cli {
-    
     #[arg(
         help = "Bind IP",
         short, long, required = false,
@@ -78,26 +82,32 @@ struct Cli {
 async fn main() {
     let cli_args = Cli::parse();
 
-    let mut log_level = "info";
-    if cli_args.verbose > 0 {
-        log_level = "debug";
-    }
+    // let mut log_level = "info";
+    // if cli_args.verbose > 0 {
+    //     log_level = "debug";
+    // }
 
-    ::std::env::set_var("RUST_LOG", log_level);
-    env_logger::builder()
-        .format_timestamp_secs()
-        .init();
+    let (sender, mut receiver) = broadcast::channel(10);
+    let logger = Box::new(MyLogger{sender});
+
+    // ::std::env::set_var("RUST_LOG", log_level);
+    // env_logger::builder()
+    //     .format_timestamp_secs();
+
+    log::set_boxed_logger(logger).unwrap();
+    log::set_max_level(LevelFilter::Trace); // Set the maximum log level
+
 
     //////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
     #[cfg(feature = "ui")]{
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
-                .with_inner_size([500.0, 700.0]), // wide enough for the drag-drop overlay text
+                .with_inner_size([500.0, 700.0]),
                 ..Default::default()
         };
 
-        eframe::run_native(
+        let _ = eframe::run_native(
             "Quick-Serve",
             options,
             Box::new(|cc| {
@@ -106,7 +116,29 @@ async fn main() {
                     ..Style::default()
                 };
                 cc.egui_ctx.set_style(style);
-                Box::new(UI::new(cc))
+
+                let ui = UI::new(cc);
+
+                let ll = ui.logs.clone();
+
+                tokio::spawn(async move {
+                    loop {
+                        match receiver.recv().await {
+                            Ok(log_line) => {
+                                // println!(" *** {log_line}");
+                                let mut data = ll.lock();
+                                data.push_str(&format!("{}\n", log_line));
+                            }
+                            Err(_) => {
+                                println!("Something went wrong while receiving a log message");
+                                continue;
+                            }
+                        };
+                    };
+                });
+
+
+                Box::new(ui)
             }),
         );
     }
