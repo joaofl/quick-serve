@@ -58,10 +58,12 @@ cargo build --release --no-default-features
 
 Even if it is compiled, the UI can still be disabled at runtime.
 
-## Cross compile using cross:
+## Cross compile:
 
 ```sh
+sudo dnf install mingw64-gcc
 cargo install cross
+
 ./cross-build-all
 # or
 cross build --release
