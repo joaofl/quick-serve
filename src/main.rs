@@ -127,8 +127,8 @@ async fn main() {
     // TFTP from here on
     // 
     // Spin the runners to wait for any potential server start
-    if cli_args.tftp.is_some() || headless == false {
-
+    if cli_args.tftp.is_some() {
+        // || headless == false
         // loop {
         //     // Enter loop which wait for messages to either start or stop the servers
 
@@ -239,7 +239,7 @@ async fn main() {
         if cli_args.headless == false {
             let options = eframe::NativeOptions {
                 viewport: egui::ViewportBuilder::default()
-                    .with_inner_size([500.0, 700.0]),
+                    .with_inner_size([700.0, 800.0]),
                     ..Default::default()
             };
 

@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 use eframe::egui;
 use egui::DragValue;
+use egui::{Label, TextStyle, FontId, Color32};
 use crate::ui::toggle_switch::toggle;
 use crate::servers::server::Protocol;
 
@@ -71,7 +72,6 @@ impl eframe::App for UI {
             });
 
             // #######################################################################
-
             ui.add_space(5.0);
 
             ui.group(|ui| {
@@ -91,7 +91,6 @@ impl eframe::App for UI {
 
             // #######################################################################
             ui.add_space(5.0);
-
 
             ui.horizontal(|ui| {
 
@@ -125,7 +124,7 @@ impl eframe::App for UI {
             ui.add_space(5.0);
             ui.separator();
 
-            egui::ScrollArea::vertical()
+            egui::ScrollArea::both()
                 .auto_shrink(false)
                 .stick_to_bottom(true)
                 .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded)
@@ -133,9 +132,9 @@ impl eframe::App for UI {
                     ui.with_layout(
                         egui::Layout::top_down(egui::Align::LEFT).with_cross_justify(true),
                         |ui| {
-                            // TODO: Change font to monospace, and add syntax highlight
                             // Acquire the lock
-                            ui.label(self.logs.lock().unwrap().clone());
+                            let logs = self.logs.lock().unwrap().clone();
+                            ui.label( egui::RichText::new(logs).text_style(TextStyle::Monospace) );
                         },
                     );
                 });
