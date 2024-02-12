@@ -1,19 +1,22 @@
 use log::{Level, Log, Metadata, Record};
-use egui::mutex::Mutex;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
+
+pub trait MyLoggerFn {
+    fn new () -> Self;
+}
 
 pub struct MyLogger {
     pub logs: Arc<Mutex<String>>,
 }
 
-// impl Default for MyLogger {
-//     fn default() -> Self {
-//         MyLogger {
-//             logs: Arc::new(Mutex::new(String::new())),
-//         }
-//     }
-// }
+impl MyLoggerFn for MyLogger {
+    fn new () -> Self {
+        MyLogger {
+            logs: Arc::new(Mutex::new(String::new()))
+        }
+    }
+}
 
 impl Log for MyLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
@@ -31,8 +34,8 @@ impl Log for MyLogger {
                 record.args()
             );
 
-            println!("-> {}", log_line);
-            self.logs.lock().push_str(&format!("{}\n", log_line));
+            println!("{}", log_line);
+            self.logs.lock().unwrap().push_str(&format!("{}\n", log_line));
         }
     }
 

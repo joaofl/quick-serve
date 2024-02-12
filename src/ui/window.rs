@@ -1,10 +1,8 @@
-use std::sync::Arc;
-
+use std::sync::{Arc, Mutex};
 use eframe::egui;
 use egui::DragValue;
 use crate::ui::toggle_switch::toggle;
 use crate::servers::server::Protocol;
-use egui::mutex::Mutex;
 
 
 pub struct UI {
@@ -135,13 +133,9 @@ impl eframe::App for UI {
                     ui.with_layout(
                         egui::Layout::top_down(egui::Align::LEFT).with_cross_justify(true),
                         |ui| {
-
+                            // TODO: Change font to monospace, and add syntax highlight
                             // Acquire the lock
-                            let guard = self.logs.lock();
-                            // Dereference the guard and clone the inner string
-                            let logs_string = (*guard).clone();
-
-                            ui.label(logs_string);
+                            ui.label(self.logs.lock().unwrap().clone());
                         },
                     );
                 });
