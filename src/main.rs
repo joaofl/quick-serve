@@ -18,6 +18,8 @@ extern crate ctrlc;
 extern crate core;
 
 use tokio::sync::broadcast;
+use egui::mutex::Mutex;
+
 
 #[cfg(feature = "ui")] mod ui;
 #[cfg(feature = "ui")] use crate::ui::window::UI;
@@ -87,8 +89,8 @@ async fn main() {
     //     log_level = "debug";
     // }
 
-    let (sender, mut receiver) = broadcast::channel(10);
-    let logger = Box::new(MyLogger{sender});
+    let logs = Arc::new(Mutex::new(String::from("")));
+    let mut logger = Box::new(MyLogger {logs: logs.clone()});
 
     // ::std::env::set_var("RUST_LOG", log_level);
     // env_logger::builder()
@@ -116,28 +118,8 @@ async fn main() {
                     ..Style::default()
                 };
                 cc.egui_ctx.set_style(style);
-
-                let ui = UI::new(cc);
-
-                let ll = ui.logs.clone();
-
-                tokio::spawn(async move {
-                    loop {
-                        match receiver.recv().await {
-                            Ok(log_line) => {
-                                // println!(" *** {log_line}");
-                                let mut data = ll.lock();
-                                data.push_str(&format!("{}\n", log_line));
-                            }
-                            Err(_) => {
-                                println!("Something went wrong while receiving a log message");
-                                continue;
-                            }
-                        };
-                    };
-                });
-
-
+                let mut ui = UI::new(cc);
+                ui.logs = logs;
                 Box::new(ui)
             }),
         );
