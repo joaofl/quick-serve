@@ -3,7 +3,7 @@
 
 use log::{error, info, warn, LevelFilter};
 
-use std::path::PathBuf;
+use std::{path::PathBuf, process::exit};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -108,7 +108,6 @@ async fn main() {
     //////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
     // debug!("\n{:#?}\n", cli_args);
-
     let mut spawned_runners = vec![];
     let mut spawned_servers = vec![];
 
@@ -122,102 +121,53 @@ async fn main() {
     let headless = cli_args.headless;
 
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // 
+    ////////////////////////////////////////////////////////////////////////
     // TFTP from here on
-    // 
-    // Spin the runners to wait for any potential server start
+    ////////////////////////////////////////////////////////////////////////
     if cli_args.tftp.is_some() {
-        // || headless == false
-        // loop {
-        //     // Enter loop which wait for messages to either start or stop the servers
-
-        //     if headless == false {
-        //         // when using the GUI, wait for the turn-on event
-        //         // message here
-        //     }
-
             // TODO:in case of the gui version, these values should come from the UI
             let port = cli_args.tftp.unwrap() as u16;
-            let tftp_server = Arc::new(<Server as TFTPServerRunner>::new(path.clone(), bind_ip.clone(), port));
-            let tftp_server_c = tftp_server.clone();
+            let tftp_server = Arc::new(<Server as TFTPRunner>::new(path.clone(), bind_ip.clone(), port));
 
             spawned_servers.push(tftp_server.clone());
-            spawned_runners.push(
-                tokio::spawn(async move {
-                    TFTPServerRunner::runner(tftp_server).await
-                })
-            );
+            spawned_runners.push(TFTPRunner::runner(tftp_server.clone()).await);
 
-            let _port = cli_args.tftp.unwrap() as u16;
-            let _ = tftp_server_c.start();
-
-            // if headless {
-            //     // exit the loop after running once
-            //     break;
-            // }
-
-            // tftp_server_c.terminate();
-            // del(tftp_server);
-        // }
-
+            let _ = tftp_server.start();
     }
 
-
-    ///////////////////////////////////////////////////////////////////////////////
-    // 
+    ////////////////////////////////////////////////////////////////////////
     // FTP from here on
-    // 
-    // Spin the runners to wait for any potential server start
+    ////////////////////////////////////////////////////////////////////////
     if cli_args.ftp.is_some() {
         let port = cli_args.ftp.unwrap() as u16;
         let ftp_server = Arc::new(<Server as FTPRunner>::new(path.clone(), bind_ip.clone(), port));
-        let ftp_server_c = ftp_server.clone();
 
         spawned_servers.push(ftp_server.clone());
-        spawned_runners.push(
-            tokio::spawn(async move {
-                FTPRunner::runner(ftp_server.deref()).await
-            })
-        );
+        spawned_runners.push(FTPRunner::runner(ftp_server.clone()).await);
 
-        spawned_runners.push(
-            tokio::spawn(async move {
-                let _ = ftp_server_c.start();
-            })
-        );
+        let _ = ftp_server.start();
     }
 
-
-    ///////////////////////////////////////////////////////////////////////////////
-    // 
+    ////////////////////////////////////////////////////////////////////////
     // HTTP from here on
-    // 
-    // Spin the runners to wait for any potential server start
+    ////////////////////////////////////////////////////////////////////////
     if cli_args.http.is_some() {
         let port = cli_args.http.unwrap() as u16;
-        let server = Arc::new(<Server as HTTPRunner>::new(path.clone(), bind_ip.clone(), port));
-        let server_c = server.clone();
+        let http_server = Arc::new(<Server as HTTPRunner>::new(path.clone(), bind_ip.clone(), port));
 
-        spawned_servers.push(server.clone());
-        spawned_runners.push(
-            tokio::spawn(async move {
-                HTTPRunner::runner(server).await
-            })
-        );
-        spawned_runners.push(
-            tokio::spawn(async move {
-                let _ = server_c.start();
-            })
-        );
+        spawned_servers.push(http_server.clone());
+        spawned_runners.push(HTTPRunner::runner(http_server.clone()).await);
+
+        let _ = http_server.start();
     }
 
-    //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+    // Ctrl+c handler from here on
+    ////////////////////////////////////////////////////////////////////////
 
     if headless && spawned_runners.iter().count() == 0 {
         error!("No server(s) specified. Run with -h for more info...");
-        return;
+        exit(1);
     }
 
     // Set up a handler for Ctrl+C signal
@@ -232,9 +182,9 @@ async fn main() {
     }).expect("Error setting Ctrl+C handler");
     info!("Press Ctrl+C to exit.");
 
-    //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
-    // let headless = true;
+    ////////////////////////////////////////////////////////////////////////
+    // UI related code from here on
+    ////////////////////////////////////////////////////////////////////////
     #[cfg(feature = "ui")]{
         if cli_args.headless == false {
             let options = eframe::NativeOptions {
@@ -264,6 +214,11 @@ async fn main() {
     return;
 }
 
+
+
+////////////////////////////////////////////////////////////////////////
+// TESTS
+////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
     use predicates::prelude::*;
