@@ -32,10 +32,9 @@ impl FTPRunner for Server {
     }
 
     async fn runner(self: Arc<Self>) -> JoinHandle<()> {
-        // Get notified about the server's spawned task
-        let mut receiver = self.sender.subscribe();
-        
         tokio::spawn(async move {
+            // Get notified about the server's spawned task
+            let mut receiver = self.sender.subscribe();
             loop {
                 let m = receiver.recv().await.unwrap();
                 let mut receiver2 = self.sender.subscribe();
@@ -48,7 +47,6 @@ impl FTPRunner for Server {
                         .passive_ports(50000..65535)
                         .metrics()
                         .shutdown_indicator(async move {
-                            // let r2 = receiver_2.clone();
                             loop {
                                 let m2 = receiver2.recv().await.unwrap();
                                 if m2.terminate { break }

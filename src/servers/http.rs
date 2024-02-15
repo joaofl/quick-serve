@@ -32,11 +32,9 @@ impl HTTPRunner for Server {
         return s;
     }
     async fn runner(self: Arc<Self>)  -> JoinHandle<()> {
-        // Get notified about the server's spawned task
-        let mut receiver = self.sender.subscribe();
-
-
         tokio::spawn(async move {
+            // Get notified about the server's spawned task
+            let mut receiver = self.sender.subscribe();
             loop {
                 let m = receiver.recv().await.unwrap();
 
