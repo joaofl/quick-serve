@@ -42,8 +42,8 @@ struct Cli {
     )] bind_ip: String,
     
     #[arg(
-        help = "Path to serve",
-        short = 'p', long, required = false,
+        help = "Directory to serve",
+        short = 'd', long, required = false,
         default_value = "/tmp/",
         value_name = "PATH",
         require_equals = true,
@@ -125,14 +125,14 @@ async fn main() {
     // TFTP from here on
     ////////////////////////////////////////////////////////////////////////
     if cli_args.tftp.is_some() {
-            // TODO:in case of the gui version, these values should come from the UI
-            let port = cli_args.tftp.unwrap() as u16;
-            let tftp_server = Arc::new(<Server as TFTPRunner>::new(path.clone(), bind_ip.clone(), port));
+        // TODO:in case of the gui version, these values should come from the UI
+        let port = cli_args.tftp.unwrap() as u16;
+        let tftp_server = Arc::new(<Server as TFTPRunner>::new(path.clone(), bind_ip.clone(), port));
 
-            spawned_servers.push(tftp_server.clone());
-            spawned_runners.push(TFTPRunner::runner(tftp_server.clone()).await);
+        spawned_servers.push(tftp_server.clone());
+        spawned_runners.push(TFTPRunner::runner(tftp_server.clone()).await);
 
-            let _ = tftp_server.start();
+        let _ = tftp_server.start();
     }
 
     ////////////////////////////////////////////////////////////////////////
