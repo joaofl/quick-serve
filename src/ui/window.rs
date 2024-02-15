@@ -57,9 +57,6 @@ impl eframe::App for UI {
             ctx.request_repaint();
 
             egui::menu::bar(ui, |ui| {
-                if ui.button("About").clicked() {
-                    std::process::exit(0);
-                };
                 egui::ComboBox::from_label("")
                     .selected_text("Size")
                     .show_ui(ui, |ui| {
@@ -69,6 +66,10 @@ impl eframe::App for UI {
                     });
 
                     egui::widgets::global_dark_light_mode_switch(ui);
+
+                    if ui.button("Exit").clicked() {
+                        std::process::exit(0);
+                    };
             });
 
             // #######################################################################
