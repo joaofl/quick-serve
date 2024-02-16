@@ -1,10 +1,10 @@
-#![allow(warnings)]
+// #![allow(warnings)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use log::{error, info, warn, LevelFilter};
 
 use std::{path::PathBuf, process::exit};
-use std::ops::Deref;
+// use std::ops::Deref;
 use std::sync::Arc;
 
 mod utils;
@@ -17,8 +17,9 @@ use clap::Parser;
 extern crate ctrlc;
 extern crate core;
 
+// #[cfg(feature = "ui")] use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
 #[cfg(feature = "ui")] mod ui;
-#[cfg(feature = "ui")] use crate::ui::window::UI;
+#[cfg(feature = "ui")] use crate::ui::window::*;
 #[cfg(feature = "ui")] use egui::{Style, Visuals};
 
 
@@ -98,6 +99,10 @@ async fn main() {
     // in the UI
     let logs = logger.logs.clone();
 
+
+    // Define the channel used to exchange with the UI
+    let mut channel: DefaultChannel<String> = Default::default();
+
     // ::std::env::set_var("RUST_LOG", log_level);
     // env_logger::builder()
     //     .format_timestamp_secs();
@@ -120,6 +125,14 @@ async fn main() {
     #[cfg(feature = "ui")]
     let headless = cli_args.headless;
 
+    ////////////////////////////////////////////////////////////////////////
+    // Receive from UI
+    ////////////////////////////////////////////////////////////////////////
+    let _receiver_task = tokio::spawn(async move {
+        while let Some(message) = channel.receiver.recv().await {
+            info!("Received message: {}", message);
+        }
+    });
 
     ////////////////////////////////////////////////////////////////////////
     // TFTP from here on
@@ -187,6 +200,7 @@ async fn main() {
     ////////////////////////////////////////////////////////////////////////
     #[cfg(feature = "ui")]{
         if cli_args.headless == false {
+
             let options = eframe::NativeOptions {
                 viewport: egui::ViewportBuilder::default()
                     .with_inner_size([700.0, 800.0]),
@@ -202,8 +216,11 @@ async fn main() {
                         ..Style::default()
                     };
                     cc.egui_ctx.set_style(style);
+
                     let mut ui = UI::new(cc);
                     ui.logs = logs;
+
+                    ui.channel.sender = channel.sender;
                     Box::new(ui)
                 }),
             );

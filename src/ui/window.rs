@@ -2,13 +2,32 @@ use std::sync::{Arc, Mutex};
 use eframe::egui;
 use egui::DragValue;
 use egui::{Label, TextStyle, FontId, Color32};
+use log::info;
 use crate::ui::toggle_switch::toggle;
 use crate::servers::server::Protocol;
 
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
 
+
+// Define a struct to hold both the sender and receiver
+pub struct DefaultChannel<T> {
+    pub sender: UnboundedSender<T>,
+    pub receiver: UnboundedReceiver<T>,
+}
+
+impl<T> Default for DefaultChannel<T> {
+    fn default() -> Self {
+        let (sender, receiver) = unbounded_channel();
+        DefaultChannel { sender, receiver }
+    }
+}
+
+
+#[derive(Default)]
 pub struct UI {
     pick_folder: Option<String>,
     aspect_ratio: f32,
+
     toggle_sw_ftp: bool,
     port_ftp: u16,
 
@@ -18,34 +37,20 @@ pub struct UI {
     toggle_sw_http: bool,
     port_http: u16,
 
+    pub channel: DefaultChannel<String>,
     pub logs: Arc<Mutex<String>>,
 }
 
-impl Default for UI {
-    fn default() -> Self {
-        UI {
-            logs: Arc::new(Mutex::new(String::from(""))),
-
-            pick_folder: Default::default(),
-            aspect_ratio: 1.8,
-            // log_sender: broadcast::channel(10).0,
-
-            port_ftp: Protocol::get_default_port(&Protocol::Ftp),
-            toggle_sw_ftp: Default::default(),
-
-            port_tftp: Protocol::get_default_port(&Protocol::Tftp),
-            toggle_sw_tftp: Default::default(),
-
-            port_http: Protocol::get_default_port(&Protocol::Http),
-            toggle_sw_http: Default::default(),
-        }
-    }
-}
-
-
 impl UI {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        UI::default()
+
+        UI {
+            aspect_ratio: 1.8,
+            port_ftp: Protocol::get_default_port(&Protocol::Ftp),
+            port_tftp: Protocol::get_default_port(&Protocol::Tftp),
+            port_http: Protocol::get_default_port(&Protocol::Http),
+            ..Default::default()
+        }
     }
 }
 
@@ -115,7 +120,11 @@ impl eframe::App for UI {
                     ui.horizontal(|ui| {
                         ui.label(Protocol::to_string(&Protocol::Http));
                         ui.add(DragValue::new(&mut self.port_http).clamp_range(1..=50000));
-                        ui.add(toggle(&mut self.toggle_sw_http));
+                        // ui.add(toggle(&mut self.toggle_sw_http));
+
+                        if ui.toggle_value(&mut self.toggle_sw_http, "HTTP").clicked() {
+                            self.channel.sender.send("Woooooo2222".to_string());
+                        }
                     });
                 });
 
