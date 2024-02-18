@@ -1,8 +1,8 @@
 use std::sync::{Arc, Mutex};
 use eframe::egui;
 use egui::DragValue;
-use egui::{Label, TextStyle, FontId, Color32};
-use log::info;
+use egui::{Label, TextStyle};
+// use log::info;
 use crate::ui::toggle_switch::toggle;
 use crate::servers::server::Protocol;
 
@@ -24,18 +24,29 @@ impl<T> Default for DefaultChannel<T> {
 
 
 #[derive(Default)]
+pub struct ProtocolUI {
+    toggle: bool, 
+    port: u16,
+    name: String,
+}
+
+impl ProtocolUI {
+    fn new(prot: &Protocol) -> Self {
+        Self {
+            toggle: false, 
+            port: prot.get_default_port(),
+            name: prot.to_string().into(),
+        }
+    }
+}
+
+
+#[derive(Default)]
 pub struct UI {
     pick_folder: Option<String>,
     aspect_ratio: f32,
 
-    toggle_sw_ftp: bool,
-    port_ftp: u16,
-
-    toggle_sw_tftp: bool,
-    port_tftp: u16,
-
-    toggle_sw_http: bool,
-    port_http: u16,
+    protocols: Vec<ProtocolUI>,
 
     pub channel: DefaultChannel<String>,
     pub logs: Arc<Mutex<String>>,
@@ -44,13 +55,15 @@ pub struct UI {
 impl UI {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
 
-        UI {
+        let mut s = UI {
             aspect_ratio: 1.8,
-            port_ftp: Protocol::get_default_port(&Protocol::Ftp),
-            port_tftp: Protocol::get_default_port(&Protocol::Tftp),
-            port_http: Protocol::get_default_port(&Protocol::Http),
             ..Default::default()
-        }
+        };
+
+        s.protocols.push(ProtocolUI::new(&Protocol::Http));
+        s.protocols.push(ProtocolUI::new(&Protocol::Ftp));
+        s.protocols.push(ProtocolUI::new(&Protocol::Tftp));
+        s
     }
 }
 
@@ -97,37 +110,24 @@ impl eframe::App for UI {
 
             // #######################################################################
             ui.add_space(5.0);
-
             ui.horizontal(|ui| {
 
-                ui.group(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(Protocol::to_string(&Protocol::Tftp));
-                        ui.add(DragValue::new(&mut self.port_tftp).clamp_range(1..=50000));
-                        ui.add(toggle(&mut self.toggle_sw_tftp));
+                // Iterate over each known protocol, and draw its elements
+                for p in self.protocols.iter_mut() {
+
+                    ui.group(|ui| {
+                        ui.horizontal(|ui| {
+                            ui.add(Label::new(format!("{}", p.name)));
+                            ui.add(DragValue::new(&mut p.port).clamp_range(1..=50000));
+
+                            if ui.add(toggle(&mut p.toggle)).clicked() {
+                                self.channel.sender
+                                    .send(format!("{}", p.port))
+                                    .expect("Failed to send message");
+                            }
+                        });
                     });
-                });
-
-                ui.group(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(Protocol::to_string(&Protocol::Ftp));
-                        ui.add(DragValue::new(&mut self.port_ftp).clamp_range(1..=50000));
-                        ui.add(toggle(&mut self.toggle_sw_ftp));
-                    });
-                });
-
-                ui.group(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(Protocol::to_string(&Protocol::Http));
-                        ui.add(DragValue::new(&mut self.port_http).clamp_range(1..=50000));
-                        // ui.add(toggle(&mut self.toggle_sw_http));
-
-                        if ui.toggle_value(&mut self.toggle_sw_http, "HTTP").clicked() {
-                            self.channel.sender.send("Woooooo2222".to_string());
-                        }
-                    });
-                });
-
+                }
             });
 
             // #######################################################################
