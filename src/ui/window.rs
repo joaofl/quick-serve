@@ -22,12 +22,14 @@ impl<T> Default for DefaultChannel<T> {
     }
 }
 
-
+// #[derive(Copy)]
+#[derive(Clone)]
+#[derive(Debug)]
 #[derive(Default)]
 pub struct ProtocolUI {
-    toggle: bool, 
-    port: u16,
-    name: String,
+    pub toggle: bool, 
+    pub port: u16,
+    pub name: String,
 }
 
 impl ProtocolUI {
@@ -48,7 +50,7 @@ pub struct UI {
 
     protocols: Vec<ProtocolUI>,
 
-    pub channel: DefaultChannel<String>,
+    pub channel: DefaultChannel<ProtocolUI>,
     pub logs: Arc<Mutex<String>>,
 }
 
@@ -122,7 +124,7 @@ impl eframe::App for UI {
 
                             if ui.add(toggle(&mut p.toggle)).clicked() {
                                 self.channel.sender
-                                    .send(format!("{}", p.port))
+                                    .send(p.clone())
                                     .expect("Failed to send message");
                             }
                         });

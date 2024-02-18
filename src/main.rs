@@ -101,7 +101,7 @@ async fn main() {
 
 
     // Define the channel used to exchange with the UI
-    let mut channel: DefaultChannel<String> = Default::default();
+    let mut channel: DefaultChannel<ProtocolUI> = Default::default();
 
     // ::std::env::set_var("RUST_LOG", log_level);
     // env_logger::builder()
@@ -129,8 +129,9 @@ async fn main() {
     // Receive from UI
     ////////////////////////////////////////////////////////////////////////
     let _receiver_task = tokio::spawn(async move {
-        while let Some(message) = channel.receiver.recv().await {
-            info!("Received message: {}", message);
+        while let Some(p) = channel.receiver.recv().await {
+
+            info!("Received message: {:#?}", p);
         }
     });
 
