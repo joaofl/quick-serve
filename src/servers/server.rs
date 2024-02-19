@@ -1,6 +1,6 @@
-use log::{info};
+use log::info;
 use tokio::sync::broadcast;
-use std::{path::PathBuf};
+use std::path::PathBuf;
 
 
 #[derive(Default, PartialEq)]
@@ -79,6 +79,7 @@ impl Server {
         // and the second to ensure runner exits.
         let _ = self.sender.send(m.clone());
         let _ = self.sender.send(m);
+        info!("{} server stopped", self.protocol.to_string());
     }
 }
 

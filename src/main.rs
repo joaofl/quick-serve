@@ -2,7 +2,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use log::{error, info, warn, LevelFilter};
-
 use std::{path::PathBuf, process::exit};
 // use std::ops::Deref;
 use std::sync::Arc;
@@ -101,7 +100,7 @@ async fn main() {
 
 
     // Define the channel used to exchange with the UI
-    let mut channel: DefaultChannel<ProtocolUI> = Default::default();
+    let channel: DefaultChannel<UIEvent> = Default::default();
 
     // ::std::env::set_var("RUST_LOG", log_level);
     // env_logger::builder()
@@ -128,10 +127,20 @@ async fn main() {
     ////////////////////////////////////////////////////////////////////////
     // Receive from UI
     ////////////////////////////////////////////////////////////////////////
+    let mut receiver_clone = channel.sender.subscribe();
     let _receiver_task = tokio::spawn(async move {
-        while let Some(p) = channel.receiver.recv().await {
+        let mut s: Arc<Server>;
+        loop {
+            let (proto, bind_ip, path) = receiver_clone.recv().await.unwrap();
 
-            info!("Received message: {:#?}", p);
+            if proto.toggle == true {
+                s = Arc::new(<Server as HTTPRunner>::new(path.into(), bind_ip, proto.port));
+                HTTPRunner::runner(s.clone()).await;
+                let _ = s.start();
+            }
+            else {
+                let _ = s.terminate();
+            }
         }
     });
 

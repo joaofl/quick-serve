@@ -1,3 +1,4 @@
+// use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use eframe::egui;
 use egui::DragValue;
@@ -5,52 +6,57 @@ use egui::{Label, TextStyle};
 // use log::info;
 use crate::ui::toggle_switch::toggle;
 use crate::servers::server::Protocol;
-
-use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
+use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 
 // Define a struct to hold both the sender and receiver
 pub struct DefaultChannel<T> {
-    pub sender: UnboundedSender<T>,
-    pub receiver: UnboundedReceiver<T>,
+    pub sender: Sender<T>,
+    pub receiver: Receiver<T>,
 }
 
-impl<T> Default for DefaultChannel<T> {
+impl<T: Clone> Default for DefaultChannel<T> {
     fn default() -> Self {
-        let (sender, receiver) = unbounded_channel();
+        let (sender, receiver) = channel (50);
         DefaultChannel { sender, receiver }
     }
 }
 
-// #[derive(Copy)]
-#[derive(Clone)]
-#[derive(Debug)]
-#[derive(Default)]
-pub struct ProtocolUI {
+#[derive(Clone, Debug, Default)]
+pub struct UIProtocolElements {
     pub toggle: bool, 
     pub port: u16,
     pub name: String,
+    // pub bind_ip: String,
+    // pub path: PathBuf,
 }
 
-impl ProtocolUI {
+impl UIProtocolElements {
     fn new(prot: &Protocol) -> Self {
         Self {
             toggle: false, 
             port: prot.get_default_port(),
             name: prot.to_string().into(),
+            // bind_ip,
+            // path
         }
     }
 }
 
 
+pub type UIEvent = (UIProtocolElements, String, String);
+
 #[derive(Default)]
 pub struct UI {
-    pick_folder: Option<String>,
+    path: String,
     aspect_ratio: f32,
 
-    protocols: Vec<ProtocolUI>,
+    protocols: Vec<UIProtocolElements>,
 
-    pub channel: DefaultChannel<ProtocolUI>,
+    bind_ip: String,
+    // path: PathBuf,
+
+    pub channel: DefaultChannel<UIEvent>,
     pub logs: Arc<Mutex<String>>,
 }
 
@@ -59,12 +65,14 @@ impl UI {
 
         let mut s = UI {
             aspect_ratio: 1.8,
+            bind_ip: "0.0.0.0".into(),
+            path: "/tmp/".into(),
             ..Default::default()
         };
 
-        s.protocols.push(ProtocolUI::new(&Protocol::Http));
-        s.protocols.push(ProtocolUI::new(&Protocol::Ftp));
-        s.protocols.push(ProtocolUI::new(&Protocol::Tftp));
+        s.protocols.push(UIProtocolElements::new(&Protocol::Http));
+        s.protocols.push(UIProtocolElements::new(&Protocol::Ftp));
+        s.protocols.push(UIProtocolElements::new(&Protocol::Tftp));
         s
     }
 }
@@ -80,9 +88,9 @@ impl eframe::App for UI {
                 egui::ComboBox::from_label("")
                     .selected_text("Size")
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut self.aspect_ratio, 2.0, "Big");
-                        ui.selectable_value(&mut self.aspect_ratio, 1.5, "Medium");
-                        ui.selectable_value(&mut self.aspect_ratio, 1.0, "Small");
+                        ui.selectable_value(&mut self.aspect_ratio, 2.0, "L");
+                        ui.selectable_value(&mut self.aspect_ratio, 1.5, "M");
+                        ui.selectable_value(&mut self.aspect_ratio, 1.0, "S");
                     });
 
                     egui::widgets::global_dark_light_mode_switch(ui);
@@ -99,14 +107,11 @@ impl eframe::App for UI {
                 ui.horizontal(|ui| {
                     if ui.button("Select path…").clicked() {
                         if let Some(path) = rfd::FileDialog::new().pick_folder() {
-                            self.pick_folder = Some(path.display().to_string());
+                            self.path = path.display().to_string();
                         }
                     }
 
-                    if let Some(pick_folder) = &self.pick_folder {
-                        // ui.text_edit_singleline(&mut pick_folder);
-                        ui.monospace(pick_folder);
-                    }
+                    ui.monospace(self.path.clone());
                 });
             });
 
@@ -123,8 +128,10 @@ impl eframe::App for UI {
                             ui.add(DragValue::new(&mut p.port).clamp_range(1..=50000));
 
                             if ui.add(toggle(&mut p.toggle)).clicked() {
+
+                                let msg = (p.clone(), self.bind_ip.clone(), self.path.clone());
                                 self.channel.sender
-                                    .send(p.clone())
+                                    .send(msg)
                                     .expect("Failed to send message");
                             }
                         });
