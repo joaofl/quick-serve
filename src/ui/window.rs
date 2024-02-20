@@ -1,7 +1,7 @@
 // use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use eframe::egui;
-use egui::DragValue;
+use egui::{DragValue, TextEdit};
 use egui::{Label, TextStyle};
 // use log::info;
 use crate::ui::toggle_switch::toggle;
@@ -65,7 +65,7 @@ impl UI {
 
         let mut s = UI {
             aspect_ratio: 1.8,
-            bind_ip: "0.0.0.0".into(),
+            bind_ip: "127.0.0.1".into(),
             path: "/tmp/".into(),
             ..Default::default()
         };
@@ -105,15 +105,31 @@ impl eframe::App for UI {
 
             ui.group(|ui| {
                 ui.horizontal(|ui| {
-                    if ui.button("Select path…").clicked() {
+                    let name_label = ui.label("Directory: ");
+                    ui.text_edit_singleline(&mut self.path.clone())
+                        .labelled_by(name_label.id);
+
+                    if ui.button("📂").clicked() {
                         if let Some(path) = rfd::FileDialog::new().pick_folder() {
                             self.path = path.display().to_string();
                         }
                     }
-
-                    ui.monospace(self.path.clone());
+                    // ui.monospace(self.path.clone());
+                    // ui.label(self.path.clone());
                 });
             });
+
+            ui.group(|ui| {
+                ui.horizontal(|ui| {
+                    let name_label = ui.label("Bind IP: ");
+                    ui.add(
+                        TextEdit::singleline(&mut self.bind_ip)
+                        .char_limit(15)
+                        .desired_width(100.0)
+                    );
+                });
+            });
+
 
             // #######################################################################
             ui.add_space(5.0);
