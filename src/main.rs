@@ -16,7 +16,7 @@ use clap::Parser;
 extern crate ctrlc;
 extern crate core;
 
-// #[cfg(feature = "ui")] use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
+#[cfg(feature = "ui")] use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
 #[cfg(feature = "ui")] mod ui;
 #[cfg(feature = "ui")] use crate::ui::window::*;
 #[cfg(feature = "ui")] use egui::{Style, Visuals};
@@ -99,6 +99,7 @@ async fn main() {
     let logs = logger.logs.clone();
 
 
+    #[cfg(feature = "ui")]
     // Define the channel used to exchange with the UI
     let channel: DefaultChannel<UIEvent> = Default::default();
 
@@ -124,22 +125,41 @@ async fn main() {
     #[cfg(feature = "ui")]
     let headless = cli_args.headless;
 
+
+
     ////////////////////////////////////////////////////////////////////////
+    // HTTP from here on
+    ////////////////////////////////////////////////////////////////////////
+    // if cli_args.http.is_some() {
+    // let port = cli_args.http.unwrap() as u16;
+    let port = 8080;
+    let server = Arc::new(<Server as HTTPRunner>::new(path.clone(), bind_ip.clone(), port));
+
+    spawned_servers.push(server.clone());
+    // spawned_runners.push(HTTPRunner::runner(http_server.clone()).await);
+
+    let server_c = server.clone();
+    spawned_runners.push(
+        tokio::spawn(async move {
+            HTTPRunner::runner(server_c).await
+        })
+    );
+
     // Receive from UI
-    ////////////////////////////////////////////////////////////////////////
+    let server_c = server.clone();
     let mut receiver_clone = channel.sender.subscribe();
     let _receiver_task = tokio::spawn(async move {
-        let mut s: Arc<Server>;
         loop {
             let (proto, bind_ip, path) = receiver_clone.recv().await.unwrap();
 
             if proto.toggle == true {
-                s = Arc::new(<Server as HTTPRunner>::new(path.into(), bind_ip, proto.port));
-                HTTPRunner::runner(s.clone()).await;
-                let _ = s.start();
+                // let s = Arc::new(<Server as HTTPRunner>::new(path.into(), bind_ip, proto.port));
+                let _ = server_c.start();
+                info!("Started server");
             }
             else {
-                let _ = s.terminate();
+                let _ = server_c.terminate();
+                info!("Server terminated");
             }
         }
     });
@@ -172,19 +192,6 @@ async fn main() {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // HTTP from here on
-    ////////////////////////////////////////////////////////////////////////
-    if cli_args.http.is_some() {
-        let port = cli_args.http.unwrap() as u16;
-        let http_server = Arc::new(<Server as HTTPRunner>::new(path.clone(), bind_ip.clone(), port));
-
-        spawned_servers.push(http_server.clone());
-        spawned_runners.push(HTTPRunner::runner(http_server.clone()).await);
-
-        let _ = http_server.start();
-    }
-
-    ////////////////////////////////////////////////////////////////////////
     // Ctrl+c handler from here on
     ////////////////////////////////////////////////////////////////////////
 
@@ -202,6 +209,8 @@ async fn main() {
             server.terminate();
         }
 
+        exit(2);
+
     }).expect("Error setting Ctrl+C handler");
     info!("Press Ctrl+C to exit.");
 
@@ -213,7 +222,7 @@ async fn main() {
 
             let options = eframe::NativeOptions {
                 viewport: egui::ViewportBuilder::default()
-                    .with_inner_size([700.0, 800.0]),
+                    .with_inner_size([900.0, 800.0]),
                     ..Default::default()
             };
 
@@ -238,7 +247,8 @@ async fn main() {
     }
 
     futures::future::join_all(spawned_runners).await;
-    return;
+
+    exit(0);
 }
 
 

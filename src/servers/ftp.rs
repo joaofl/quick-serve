@@ -28,7 +28,7 @@ impl FTPRunner for Server {
         s.port = port;
 
         s.protocol = Protocol::Ftp;
-        return s;
+        s
     }
 
     async fn runner(self: Arc<Self>) -> JoinHandle<()> {
