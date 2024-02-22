@@ -101,7 +101,6 @@ impl eframe::App for UI {
             });
 
             // #######################################################################
-            ui.add_space(5.0);
 
             ui.group(|ui| {
                 ui.horizontal(|ui| {
@@ -119,38 +118,34 @@ impl eframe::App for UI {
                 });
             });
 
-            ui.group(|ui| {
-                ui.horizontal(|ui| {
-                    let name_label = ui.label("Bind IP: ");
-                    ui.add(
-                        TextEdit::singleline(&mut self.bind_ip)
-                        .char_limit(15)
-                        .desired_width(100.0)
-                    );
-                });
-            });
-
-
             // #######################################################################
             ui.add_space(5.0);
             ui.horizontal(|ui| {
 
+                ui.group(|ui| {
+                    ui.horizontal(|ui| {
+                        let name_label = ui.label("Bind IP: ");
+                        ui.add(
+                            TextEdit::singleline(&mut self.bind_ip)
+                            .char_limit(15)
+                            .desired_width(100.0)
+                        );
+                    });
+                });
+
+                // #######################################################################
                 // Iterate over each known protocol, and draw its elements
                 for p in self.protocols.iter_mut() {
-
                     ui.group(|ui| {
-                        ui.horizontal(|ui| {
-                            ui.add(Label::new(format!("{}", p.name)));
-                            ui.add(DragValue::new(&mut p.port).clamp_range(1..=50000));
+                        ui.add(Label::new(format!("{}", p.name)));
+                        ui.add(DragValue::new(&mut p.port).clamp_range(1..=50000));
 
-                            if ui.add(toggle(&mut p.toggle)).clicked() {
-
-                                let msg = (p.clone(), self.bind_ip.clone(), self.path.clone());
-                                self.channel.sender
-                                    .send(msg)
-                                    .expect("Failed to send message");
-                            }
-                        });
+                        if ui.add(toggle(&mut p.toggle)).clicked() {
+                            let msg = (p.clone(), self.bind_ip.clone(), self.path.clone());
+                            self.channel.sender
+                                .send(msg)
+                                .expect("Failed to send message");
+                        }
                     });
                 }
             });
