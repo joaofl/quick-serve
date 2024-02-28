@@ -1,4 +1,4 @@
-// #![allow(warnings)]
+#![allow(warnings)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use log::{error, info, warn, LevelFilter};
@@ -16,7 +16,9 @@ use clap::Parser;
 extern crate ctrlc;
 extern crate core;
 
-#[cfg(feature = "ui")] use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
+use tokio::time::{sleep, Duration};
+
+#[cfg(feature = "ui")] use tokio::sync::broadcast::{channel, Receiver, Sender};
 #[cfg(feature = "ui")] mod ui;
 #[cfg(feature = "ui")] use crate::ui::window::*;
 #[cfg(feature = "ui")] use egui::{Style, Visuals};
@@ -94,14 +96,13 @@ async fn main() {
     // }
 
     let logger = Box::new(MyLogger::new());
-    // Clone the producer, so that we can pass it to the consumer
-    // in the UI
+    // Clone the producer, so that we can pass it to the consumer inside the UI
     let logs = logger.logs.clone();
 
 
     #[cfg(feature = "ui")]
     // Define the channel used to exchange with the UI
-    let channel: DefaultChannel<UIEvent> = Default::default();
+    let channel: DefaultChannel<UIElementData> = Default::default();
 
     // ::std::env::set_var("RUST_LOG", log_level);
     // env_logger::builder()
@@ -125,45 +126,45 @@ async fn main() {
     #[cfg(feature = "ui")]
     let headless = cli_args.headless;
 
-
-
     ////////////////////////////////////////////////////////////////////////
     // HTTP from here on
     ////////////////////////////////////////////////////////////////////////
     // if cli_args.http.is_some() {
     // let port = cli_args.http.unwrap() as u16;
-    let port = 8080;
-    let server = Arc::new(<Server as HTTPRunner>::new(path.clone(), bind_ip.clone(), port));
 
-    spawned_servers.push(server.clone());
-    // spawned_runners.push(HTTPRunner::runner(http_server.clone()).await);
+    let path_c = path.clone();
+    let bind_ip_c = bind_ip.clone();
+    let mut rcv = channel.sender.subscribe();
 
-    let server_c = server.clone();
-    spawned_runners.push(
-        tokio::spawn(async move {
-            HTTPRunner::runner(server_c).await
-        })
-    );
-
-    // Receive from UI
-    let server_c = server.clone();
-    let mut receiver_clone = channel.sender.subscribe();
-    let _receiver_task = tokio::spawn(async move {
+    tokio::spawn(async move {
         loop {
-            let (proto, bind_ip, path) = receiver_clone.recv().await.unwrap();
+            let proto = rcv.recv().await.unwrap();
 
             if proto.toggle == true {
-                // let s = Arc::new(<Server as HTTPRunner>::new(path.into(), bind_ip, proto.port));
-                let _ = server_c.start();
+                let server = Arc::new(<Server as HTTPRunner>::new(proto.path.into(), proto.bind_ip, proto.port));
+                // spawned_servers.push(server.clone());
+                
+                let server_c = server.clone();
+                // spawned_runners.push(
+                tokio::spawn(async move {
+                    HTTPRunner::runner(server_c).await
+                });
+
+                //TODO: instead of waiting, there should be a flag
+                sleep(Duration::from_millis(100)).await;
+
+                // Waiting is required such that the receiver listens
+                // before the sender sends the msg
+                let _ = server.start();
                 info!("Started server");
-            }
-            else {
-                let _ = server_c.terminate();
+                
+                // Once started, wait for termination
+                let proto = rcv.recv().await.unwrap();
+                let _ = server.terminate();
                 info!("Server terminated");
             }
         }
     });
-
     ////////////////////////////////////////////////////////////////////////
     // TFTP from here on
     ////////////////////////////////////////////////////////////////////////
@@ -246,7 +247,7 @@ async fn main() {
         }
     }
 
-    futures::future::join_all(spawned_runners).await;
+    // futures::future::join_all(spawned_runners).await;
 
     exit(0);
 }
