@@ -23,40 +23,35 @@ impl<T: Clone> Default for DefaultChannel<T> {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct UIProtocolElements {
+pub struct UIElementData {
     pub toggle: bool, 
     pub port: u16,
     pub name: String,
-    // pub bind_ip: String,
-    // pub path: PathBuf,
+    pub bind_ip: String,
+    pub path: String,
 }
 
-impl UIProtocolElements {
+impl UIElementData {
     fn new(prot: &Protocol) -> Self {
         Self {
             toggle: false, 
             port: prot.get_default_port(),
             name: prot.to_string().into(),
-            // bind_ip,
-            // path
+            ..Default::default()
         }
     }
 }
 
-
-pub type UIEvent = (UIProtocolElements, String, String);
-
 #[derive(Default)]
 pub struct UI {
-    path: String,
     aspect_ratio: f32,
 
-    protocols: Vec<UIProtocolElements>,
+    protocols: Vec<UIElementData>,
 
     bind_ip: String,
-    // path: PathBuf,
+    path: String,
 
-    pub channel: DefaultChannel<UIEvent>,
+    pub channel: DefaultChannel<UIElementData>,
     pub logs: Arc<Mutex<String>>,
 }
 
@@ -70,9 +65,9 @@ impl UI {
             ..Default::default()
         };
 
-        s.protocols.push(UIProtocolElements::new(&Protocol::Http));
-        s.protocols.push(UIProtocolElements::new(&Protocol::Ftp));
-        s.protocols.push(UIProtocolElements::new(&Protocol::Tftp));
+        s.protocols.push(UIElementData::new(&Protocol::Http));
+        s.protocols.push(UIElementData::new(&Protocol::Ftp));
+        s.protocols.push(UIElementData::new(&Protocol::Tftp));
         s
     }
 }
@@ -141,7 +136,11 @@ impl eframe::App for UI {
                         ui.add(DragValue::new(&mut p.port).clamp_range(1..=50000));
 
                         if ui.add(toggle(&mut p.toggle)).clicked() {
-                            let msg = (p.clone(), self.bind_ip.clone(), self.path.clone());
+
+                            let mut msg = p.clone();
+                            msg.bind_ip = self.bind_ip.clone();
+                            msg.path = self.path.clone();
+
                             self.channel.sender
                                 .send(msg)
                                 .expect("Failed to send message");
