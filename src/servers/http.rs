@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, info};
 
 use tower_http::services::ServeDir;
 use std::net::{SocketAddr, IpAddr};
@@ -35,10 +35,12 @@ impl HTTPRunner for Server {
         // Get notified about the server's spawned task
         let mut receiver = self.sender.subscribe();
         loop {
+            info!("Started runner. Waiting to start...");
             let m = receiver.recv().await.unwrap();
 
             if m.terminate { return };
             if m.connect {
+                info!("Command received: connect...");
                 // Spin and await the actual server here
                 // Parse the IP address string into an IpAddr
                 let ip: IpAddr = self.bind_address.parse().expect("Invalid IP address");
@@ -51,12 +53,13 @@ impl HTTPRunner for Server {
                     .serve(tower::make::Shared::new(service))
                     .with_graceful_shutdown(async {
                         loop {
+                            info!("Running and waiting for command to finish");
                             let m = receiver.recv().await.unwrap();
                             if m.terminate { return };
                             if m.connect { continue } // Not for me. Go wait another msg
                             else { break }
                         }
-                        debug!("Gracefully terminating the HTTP server");
+                        info!("Gracefully terminating the HTTP server");
                     });
 
                 server.await.expect("server error");
