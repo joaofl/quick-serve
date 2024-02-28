@@ -40,13 +40,13 @@ jobs:
     - name: Install extra packages
       run: sudo apt-get update && sudo apt-get install -y libatk1.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libgtk-3-dev
 
-    - name: Build for Linux x86_64
-      continue-on-error: false
-      run: cargo build --release
-
-    - name: Build for Linux x86_64 Without UI
+    - name: Build for Linux x86_64 Headless
       continue-on-error: false
       run: cargo build --release --no-default-features
+
+      - name: Build for Linux x86_64
+      continue-on-error: false
+      run: cargo build --release
 
     - name: Test for Linux x86_64
       continue-on-error: true
