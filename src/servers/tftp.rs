@@ -40,7 +40,7 @@ impl TFTPRunner for Server {
             loop {
                 let msg = receiver.recv().await.unwrap();
 
-                if msg.terminate { return };
+                if msg.stop { return };
                 if msg.connect {
                     let tsk = tokio::spawn({
                         let me = Arc::clone(&self);
@@ -60,7 +60,7 @@ impl TFTPRunner for Server {
                     if !msg.connect {
                         tsk.abort();
                         debug!("TFTP server stopped");
-                        if msg.terminate { return };
+                        if msg.stop { return };
                     }
                 }
             }

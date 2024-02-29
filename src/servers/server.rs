@@ -34,7 +34,7 @@ impl Protocol {
 #[derive(Default, Clone, Debug)]
 pub struct Message {
     pub connect: bool,
-    pub terminate: bool,
+    pub stop: bool,
 }
 
 pub struct Server {
@@ -62,20 +62,20 @@ impl Server {
         info!("Starting {} server bind to {}:{}", self.protocol.to_string(), self.bind_address, self.port);
         info!("Serving {}", self.path.to_string_lossy());
 
-        let s = Message{connect: true, terminate: false};
+        let s = Message{connect: true, stop: false};
         let _ = self.sender.send(s).map_err(|err| format!("Error sending message: {:?}", err))?;
         Ok(())
     }
 
-    pub fn terminate(&self){
+    pub fn stop(&self){
         // Stop the serving loop to exit the application. 
         // Mostly required by the headless version (single sessions).
 
-        // First stop and to then terminate
+        // First stop and to then stop
         let mut m = Message::default();
         m.connect = false;
-        m.terminate = true;
-        // Send twice. Once to make sure the server is terminated (inner loop)
+        m.stop = true;
+        // Send twice. Once to make sure the server is stopped (inner loop)
         // and the second to ensure runner exits.
         let _ = self.sender.send(m.clone());
         let _ = self.sender.send(m);

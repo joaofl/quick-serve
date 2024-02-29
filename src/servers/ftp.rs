@@ -39,7 +39,7 @@ impl FTPRunner for Server {
                 let m = receiver.recv().await.unwrap();
                 let mut receiver2 = self.sender.subscribe();
 
-                if m.terminate { return };
+                if m.stop { return };
                 if m.connect {
                     // Define new server
                     let server = 
@@ -49,7 +49,7 @@ impl FTPRunner for Server {
                         .shutdown_indicator(async move {
                             loop {
                                 let m2 = receiver2.recv().await.unwrap();
-                                if m2.terminate { break }
+                                if m2.stop { break }
                                 if m2.connect { continue } // Not for me. Go wait another msg
                                 else { break }
                             }

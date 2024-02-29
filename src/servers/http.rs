@@ -38,7 +38,7 @@ impl HTTPRunner for Server {
             info!("Started runner. Waiting to start...");
             let m = receiver.recv().await.unwrap();
 
-            if m.terminate { return };
+            if m.stop { return };
             if m.connect {
                 info!("Command received: connect...");
                 // Spin and await the actual server here
@@ -55,7 +55,7 @@ impl HTTPRunner for Server {
                         loop {
                             info!("Running and waiting for command to finish");
                             let m = receiver.recv().await.unwrap();
-                            if m.terminate { return };
+                            if m.stop { return };
                             if m.connect { continue } // Not for me. Go wait another msg
                             else { break }
                         }
