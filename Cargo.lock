@@ -3252,6 +3252,7 @@ dependencies = [
  "env_logger",
  "futures",
  "hyper",
+ "lazy_static",
  "libunftp",
  "log",
  "predicates",
@@ -4153,7 +4154,7 @@ dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
- "winnow 0.6.3",
+ "winnow 0.6.5",
 ]
 
 [[package]]
@@ -5104,9 +5105,9 @@ dependencies = [
 
 [[package]]
 name = "winnow"
-version = "0.6.3"
+version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44e19b97e00a4d3db3cdb9b53c8c5f87151b5689b82cc86c2848cbdcccb2689b"
+checksum = "dffa400e67ed5a4dd237983829e66475f0a4a26938c4b04c21baede6262215b8"
 dependencies = [
  "memchr",
 ]
@@ -5259,9 +5260,9 @@ dependencies = [
 
 [[package]]
 name = "zbus_names"
-version = "2.6.0"
+version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb80bb776dbda6e23d705cf0123c3b95df99c4ebeaec6c2599d4a5419902b4a9"
+checksum = "437d738d3750bed6ca9b8d423ccc7a8eb284f6b1d6d4e225a0e4e6258d864c8d"
 dependencies = [
  "serde",
  "static_assertions",
