@@ -106,9 +106,9 @@ checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
 name = "ahash"
-version = "0.8.10"
+version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b79b82693f705137f8fb9b37871d99e4f9a7df12b917eed79c3d3954830a60b"
+checksum = "e89da841a80418a9b391ebaea17f5c112ffaaa96f621d2c285b5174da76b9011"
 dependencies = [
  "cfg-if",
  "getrandom",
@@ -239,9 +239,9 @@ dependencies = [
 
 [[package]]
 name = "arboard"
-version = "3.3.1"
+version = "3.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1faa3c733d9a3dd6fbaf85da5d162a2e03b2e0033a90dceb0e2a90fdd1e5380a"
+checksum = "a2041f1943049c7978768d84e6d0fd95de98b76d6c4727b09e78ec253d29fa58"
 dependencies = [
  "clipboard-win",
  "log",
@@ -1320,7 +1320,7 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330c60081dcc4c72131f8eb70510f1ac07223e5d4163db481a04a0befcffa412"
 dependencies = [
- "libloading 0.8.1",
+ "libloading 0.8.2",
 ]
 
 [[package]]
@@ -1946,7 +1946,7 @@ dependencies = [
  "glutin_glx_sys",
  "glutin_wgl_sys",
  "icrate",
- "libloading 0.8.1",
+ "libloading 0.8.2",
  "objc2 0.4.1",
  "once_cell",
  "raw-window-handle 0.5.2",
@@ -2121,7 +2121,7 @@ dependencies = [
  "bitflags 2.4.2",
  "com",
  "libc",
- "libloading 0.8.1",
+ "libloading 0.8.2",
  "thiserror",
  "widestring",
  "winapi",
@@ -2400,7 +2400,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6aae1df220ece3c0ada96b8153459b67eebe9ae9212258bb0134ae60416fdf76"
 dependencies = [
  "libc",
- "libloading 0.8.1",
+ "libloading 0.8.2",
  "pkg-config",
 ]
 
@@ -2434,12 +2434,12 @@ dependencies = [
 
 [[package]]
 name = "libloading"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c571b676ddfc9a8c12f1f3d3085a7b163966a8fd8098a90640953ce5f6170161"
+checksum = "2caa5afb8bf9f3a2652760ce7d4f62d21c4d5a423e68466fca30df82f2330164"
 dependencies = [
  "cfg-if",
- "windows-sys 0.48.0",
+ "windows-targets 0.52.4",
 ]
 
 [[package]]
@@ -2654,9 +2654,9 @@ dependencies = [
 
 [[package]]
 name = "naga"
-version = "0.19.0"
+version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8878eb410fc90853da3908aebfe61d73d26d4437ef850b70050461f939509899"
+checksum = "50e3524642f53d9af419ab5e8dd29d3ba155708267667c2f3f06c88c9e130843"
 dependencies = [
  "bit-set",
  "bitflags 2.4.2",
@@ -3252,7 +3252,6 @@ dependencies = [
  "env_logger",
  "futures",
  "hyper",
- "lazy_static",
  "libunftp",
  "log",
  "predicates",
@@ -3375,9 +3374,9 @@ checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 
 [[package]]
 name = "renderdoc-sys"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "216080ab382b992234dda86873c18d4c48358f5cfcb70fd693d7f6f2131b628b"
+checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "rfd"
@@ -4472,9 +4471,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-futures"
-version = "0.4.41"
+version = "0.4.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "877b9c3f61ceea0e56331985743b13f3d25c406a7098d45180fb5f09bc19ed97"
+checksum = "76bc14366121efc8dbb487ab05bcc9d346b3b5ec0eaa76e46594cabbe51762c0"
 dependencies = [
  "cfg-if",
  "js-sys",
@@ -4622,9 +4621,9 @@ dependencies = [
 
 [[package]]
 name = "web-sys"
-version = "0.3.68"
+version = "0.3.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96565907687f7aceb35bc5fc03770a8a0471d82e479f25832f54a0e3f4b28446"
+checksum = "77afa9a11836342370f4817622a2f0f418b134426d91a82dfb48f532d2ec13ef"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
@@ -4659,9 +4658,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu"
-version = "0.19.1"
+version = "0.19.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bfe9a310dcf2e6b85f00c46059aaeaf4184caa8e29a1ecd4b7a704c3482332d"
+checksum = "a4b1213b52478a7631d6e387543ed8f642bc02c578ef4e3b49aca2a29a7df0cb"
 dependencies = [
  "arrayvec",
  "cfg-if",
@@ -4683,9 +4682,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu-core"
-version = "0.19.0"
+version = "0.19.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b15e451d4060ada0d99a64df44e4d590213496da7c4f245572d51071e8e30ed"
+checksum = "f9f6b033c2f00ae0bc8ea872c5989777c60bc241aac4e58b24774faa8b391f78"
 dependencies = [
  "arrayvec",
  "bit-vec",
@@ -4709,9 +4708,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu-hal"
-version = "0.19.1"
+version = "0.19.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3bb47856236bfafc0bc591a925eb036ac19cd987624a447ff353e7a7e7e6f72"
+checksum = "49f972c280505ab52ffe17e94a7413d9d54b58af0114ab226b9fc4999a47082e"
 dependencies = [
  "android_system_properties",
  "arrayvec",
@@ -4728,10 +4727,11 @@ dependencies = [
  "js-sys",
  "khronos-egl",
  "libc",
- "libloading 0.8.1",
+ "libloading 0.8.2",
  "log",
  "metal",
  "naga",
+ "ndk-sys",
  "objc",
  "once_cell",
  "parking_lot",
@@ -4749,9 +4749,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu-types"
-version = "0.19.0"
+version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "895fcbeb772bfb049eb80b2d6e47f6c9af235284e9703c96fc0218a42ffd5af2"
+checksum = "b671ff9fb03f78b46ff176494ee1ebe7d603393f42664be55b64dc8d53969805"
 dependencies = [
  "bitflags 2.4.2",
  "js-sys",
@@ -5047,9 +5047,9 @@ checksum = "32b752e52a2da0ddfbdbcc6fceadfeede4c939ed16d13e648833a61dfb611ed8"
 
 [[package]]
 name = "winit"
-version = "0.29.11"
+version = "0.29.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "272be407f804517512fdf408f0fe6c067bf24659a913c61af97af176bfd5aa92"
+checksum = "2b9d7047a2a569d5a81e3be098dcd8153759909b127477f4397e03cf1006d90a"
 dependencies = [
  "ahash",
  "android-activity",
@@ -5132,7 +5132,7 @@ dependencies = [
  "as-raw-xcb-connection",
  "gethostname",
  "libc",
- "libloading 0.8.1",
+ "libloading 0.8.2",
  "once_cell",
  "rustix 0.38.31",
  "x11rb-protocol",
