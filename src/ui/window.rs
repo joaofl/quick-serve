@@ -8,6 +8,7 @@ use crate::ui::toggle_switch::toggle;
 use crate::servers::server::Protocol;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 
+use crate::messages::CommandMsg;
 
 // Define a struct to hold both the sender and receiver
 pub struct DefaultChannel<T> {
@@ -22,36 +23,15 @@ impl<T: Clone> Default for DefaultChannel<T> {
     }
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct UIElementData {
-    pub toggle: bool, 
-    pub port: u16,
-    pub name: String,
-    pub bind_ip: String,
-    pub path: String,
-}
-
-impl UIElementData {
-    fn new(prot: &Protocol) -> Self {
-        Self {
-            toggle: false, 
-            port: prot.get_default_port(),
-            name: prot.to_string().into(),
-            ..Default::default()
-        }
-    }
-}
 
 #[derive(Default)]
 pub struct UI {
     aspect_ratio: f32,
-
-    protocols: Vec<UIElementData>,
-
+    protocols: Vec<CommandMsg>,
     bind_ip: String,
     path: String,
 
-    pub channel: DefaultChannel<UIElementData>,
+    pub channel: DefaultChannel<CommandMsg>,
     pub logs: Arc<Mutex<String>>,
 }
 
@@ -65,9 +45,9 @@ impl UI {
             ..Default::default()
         };
 
-        s.protocols.push(UIElementData::new(&Protocol::Http));
-        s.protocols.push(UIElementData::new(&Protocol::Ftp));
-        s.protocols.push(UIElementData::new(&Protocol::Tftp));
+        s.protocols.push(CommandMsg::new(&Protocol::Http));
+        s.protocols.push(CommandMsg::new(&Protocol::Ftp));
+        s.protocols.push(CommandMsg::new(&Protocol::Tftp));
         s
     }
 }
