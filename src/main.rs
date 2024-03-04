@@ -2,23 +2,30 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use log::{error, info, warn, LevelFilter};
+// use tokio::sync::Mutex;
 use std::{path::PathBuf, process::exit};
+// use lazy_static::lazy_static;
 // use std::ops::Deref;
-use std::sync::Arc;
+// use std::sync::Arc;
 
 mod utils;
 use utils::logger::*;
 
 mod servers;
-use crate::servers::{*};
+use crate::servers::*;
+
+mod common;
+use crate::common::*;
 
 use clap::Parser;
+use clap::ArgAction;
+
 extern crate ctrlc;
 extern crate core;
 
 use tokio::time::{sleep, Duration};
 
-#[cfg(feature = "ui")] use tokio::sync::broadcast::{channel, Receiver, Sender};
+// #[cfg(feature = "ui")] use tokio::sync::broadcast::{channel, Receiver, Sender};
 #[cfg(feature = "ui")] mod ui;
 #[cfg(feature = "ui")] use crate::ui::window::*;
 #[cfg(feature = "ui")] use egui::{Style, Visuals};
@@ -27,12 +34,12 @@ use tokio::time::{sleep, Duration};
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Quick-Serve", long_about = "Instant file serving made easy")]
 struct Cli {
-    
     // If the UI gets compiled, give the option to run headless
     #[cfg(feature = "ui")]
     #[arg(
         help = "Headless",
-        short = 'H', long, required = false,
+        long, required = false,
+        action = ArgAction::SetTrue,
     )] headless: bool,
 
     #[arg(
@@ -49,7 +56,7 @@ struct Cli {
         default_value = "/tmp/",
         value_name = "PATH",
         require_equals = true,
-    )] serve_dir: PathBuf,
+    )] serve_dir: String,
 
     #[arg(
         help = "Verbose logging",
@@ -102,7 +109,7 @@ async fn main() {
 
     #[cfg(feature = "ui")]
     // Define the channel used to exchange with the UI
-    let channel: DefaultChannel<UIElementData> = Default::default();
+    let channel: DefaultChannel<CommandMsg> = Default::default();
 
     // ::std::env::set_var("RUST_LOG", log_level);
     // env_logger::builder()
@@ -114,141 +121,172 @@ async fn main() {
     //////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
     // debug!("\n{:#?}\n", cli_args);
-    let mut spawned_runners = vec![];
-    let mut spawned_servers = vec![];
 
-    // Read and validate the bind address
-    let bind_ip = cli_args.bind_ip;
-    let path = cli_args.serve_dir;
+    // lazy_static! {
+    //     static ref SPAWNED_SERVERS: Arc<Mutex<Vec<Arc<Server>>>> = Arc::new(Mutex::new(vec![]));
+    // }
 
     #[cfg(not(feature = "ui"))]
     let headless = true;
-    #[cfg(feature = "ui")]
-    let headless = cli_args.headless;
 
     ////////////////////////////////////////////////////////////////////////
     // HTTP from here on
     ////////////////////////////////////////////////////////////////////////
-    // if cli_args.http.is_some() {
-    // let port = cli_args.http.unwrap() as u16;
-
-    let path_c = path.clone();
-    let bind_ip_c = bind_ip.clone();
+    // let spawned_servers_c = SPAWNED_SERVERS.clone();
     let mut rcv = channel.sender.subscribe();
-
     tokio::spawn(async move {
         loop {
             let proto = rcv.recv().await.unwrap();
 
             if proto.toggle == true {
-                let server = Arc::new(<Server as HTTPRunner>::new(proto.path.into(), proto.bind_ip, proto.port));
-                // spawned_servers.push(server.clone());
-                
-                let server_c = server.clone();
-                // spawned_runners.push(
-                tokio::spawn(async move {
-                    HTTPRunner::runner(server_c).await
-                });
+                let server = <Server as HTTPRunner>::new(
+                    proto.path.into(), proto.bind_ip, proto.port
+                );
 
-                //TODO: instead of waiting, there should be a flag
+                // Wait the receiver to listen before the sender sends the 1rst msg
+                // TODO: use some flag instead
                 sleep(Duration::from_millis(100)).await;
-
-                // Waiting is required such that the receiver listens
-                // before the sender sends the msg
                 let _ = server.start();
                 info!("Started server");
-                
+
                 // Once started, wait for termination
                 let proto = rcv.recv().await.unwrap();
-                let _ = server.terminate();
-                info!("Server terminated");
+
+                let _ = server.stop();
+                info!("Server stopped");
             }
         }
     });
     ////////////////////////////////////////////////////////////////////////
     // TFTP from here on
     ////////////////////////////////////////////////////////////////////////
-    if cli_args.tftp.is_some() {
-        // TODO:in case of the gui version, these values should come from the UI
-        let port = cli_args.tftp.unwrap() as u16;
-        let tftp_server = Arc::new(<Server as TFTPRunner>::new(path.clone(), bind_ip.clone(), port));
+    // if cli_args.tftp.is_some() {
+    //     // TODO:in case of the gui version, these values should come from the UI
+    //     let port = cli_args.tftp.unwrap() as u16;
+    //     let tftp_server = Arc::new(<Server as TFTPRunner>::new(path.clone(), bind_ip.clone(), port));
 
-        spawned_servers.push(tftp_server.clone());
-        spawned_runners.push(TFTPRunner::runner(tftp_server.clone()).await);
+    //     // spawned_servers.push(tftp_server.clone());
+    //     TFTPRunner::runner(tftp_server.clone()).await;
 
-        let _ = tftp_server.start();
-    }
+    //     let _ = tftp_server.start();
+    // }
 
     ////////////////////////////////////////////////////////////////////////
     // FTP from here on
     ////////////////////////////////////////////////////////////////////////
-    if cli_args.ftp.is_some() {
-        let port = cli_args.ftp.unwrap() as u16;
-        let ftp_server = Arc::new(<Server as FTPRunner>::new(path.clone(), bind_ip.clone(), port));
+    // if cli_args.ftp.is_some() {
+    //     let port = cli_args.ftp.unwrap() as u16;
+    //     let ftp_server = Arc::new(<Server as FTPRunner>::new(path.clone(), bind_ip.clone(), port));
 
-        spawned_servers.push(ftp_server.clone());
-        spawned_runners.push(FTPRunner::runner(ftp_server.clone()).await);
+    //     // spawned_servers.push(ftp_server.clone());
+    //     FTPRunner::runner(ftp_server.clone()).await;
 
-        let _ = ftp_server.start();
-    }
+    //     let _ = ftp_server.start();
+    // }
 
     ////////////////////////////////////////////////////////////////////////
     // Ctrl+c handler from here on
     ////////////////////////////////////////////////////////////////////////
 
-    if headless && spawned_runners.iter().count() == 0 {
-        error!("No server(s) specified. Run with -h for more info...");
-        exit(1);
-    }
+    // if headless && spawned_runners.iter().count() == 0 {
+    //     error!("No server(s) specified. Run with -h for more info...");
+    //     exit(1);
+    // }
 
     // Set up a handler for Ctrl+C signal
-    ctrlc::set_handler(move || {
-        // Handle Ctrl+C signal here
-        warn!("Ctrl+C received. Closing connections and exiting.");
-        // Perform cleanup operations here before exiting
-        for server in &mut spawned_servers {
-            server.terminate();
+    // let spawned_servers_c = &SPAWNED_SERVERS;
+
+    // if cli_args.headless == false {
+        
+    // }
+
+    // TODO: only add handle if any server has been invoked
+    // Add handle for Ctrl+C
+    tokio::spawn(async move {
+        ctrlc::set_handler(move || {
+            warn!("Ctrl+C received. Closing connections and exiting.");
+            // Try to stop all servers gracefully
+            // let spawned_servers_locked = spawned_servers_c.lock().await;
+            // for server in spawned_servers_locked.iter() {
+            //     server.stop();
+            // }
+
+            exit(1);
+        }).expect("Error setting Ctrl+C handler");
+        info!("Press Ctrl+C to exit.");
+    });
+
+    ////////////////////////////////////////////////////////////////////////
+    // HEADLESS related code from here on
+    ////////////////////////////////////////////////////////////////////////
+    if cli_args.headless {
+        // Read and validate the bind address
+        let bind_ip = cli_args.bind_ip;
+        let path = cli_args.serve_dir;
+
+        let mut count = 0u8;
+
+        // CHeck for each server invoked from the command line, and send 
+        // messages accordingly to start each
+        if cli_args.http.is_some() {
+            // let port = cli_args.http.unwrap() as u16;
+            // let mut cmd = CommandMsg::new(&Protocol::Http);
+            // cmd.toggle = true;
+            // cmd.port = cli_args.http.unwrap() as u16;;
+
+            let cmd = CommandMsg {
+                toggle: true,
+                port: cli_args.http.unwrap() as u16,
+                bind_ip,
+                path: path,
+                name: Protocol::Http.to_string().into(),
+            };
+
+            let _ = channel.sender.send(cmd);
+            count += 1;
         }
 
-        exit(2);
-
-    }).expect("Error setting Ctrl+C handler");
-    info!("Press Ctrl+C to exit.");
-
+        if count == 0 {
+            println!("No server specified. Use -h to get help");
+            exit(2);
+        }
+        else {
+            // Run for 10 seconds...
+            // TODO: make this a feature
+            sleep(Duration::from_secs(10)).await;
+        }
+    }
     ////////////////////////////////////////////////////////////////////////
     // UI related code from here on
     ////////////////////////////////////////////////////////////////////////
-    #[cfg(feature = "ui")]{
-        if cli_args.headless == false {
+    // #[cfg(feature = "ui")]{
+    else {
+        let options = eframe::NativeOptions {
+            viewport: egui::ViewportBuilder::default()
+                .with_inner_size([900.0, 800.0]),
+                ..Default::default()
+        };
 
-            let options = eframe::NativeOptions {
-                viewport: egui::ViewportBuilder::default()
-                    .with_inner_size([900.0, 800.0]),
-                    ..Default::default()
-            };
+        let _ = eframe::run_native(
+            "Quick-Serve",
+            options,
+            Box::new(|cc| {
+                let style = Style {
+                    visuals: Visuals::light(),
+                    ..Style::default()
+                };
+                cc.egui_ctx.set_style(style);
 
-            let _ = eframe::run_native(
-                "Quick-Serve",
-                options,
-                Box::new(|cc| {
-                    let style = Style {
-                        visuals: Visuals::light(),
-                        ..Style::default()
-                    };
-                    cc.egui_ctx.set_style(style);
+                let mut ui = UI::new(cc);
+                ui.logs = logs;
 
-                    let mut ui = UI::new(cc);
-                    ui.logs = logs;
-
-                    ui.channel.sender = channel.sender;
-                    Box::new(ui)
-                }),
-            );
-        }
+                ui.channel.sender = channel.sender;
+                Box::new(ui)
+            }),
+        );
     }
 
     // futures::future::join_all(spawned_runners).await;
-
     exit(0);
 }
 

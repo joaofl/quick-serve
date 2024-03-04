@@ -14,7 +14,7 @@ use super::Server;
 #[async_trait]
 pub trait HTTPRunner {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
-    async fn runner(self: Arc<Self>);
+    fn runner(&self) -> JoinHandle<()>;
 }
 
 #[async_trait]
@@ -29,42 +29,52 @@ impl HTTPRunner for Server {
         s.port = port;
 
         s.protocol = Protocol::Http;
-        return s;
+        HTTPRunner::runner(&s);
+        s
     }
-    async fn runner(self: Arc<Self>) {
+
+    fn runner(&self) -> JoinHandle<()> {
         // Get notified about the server's spawned task
         let mut receiver = self.sender.subscribe();
-        loop {
-            info!("Started runner. Waiting to start...");
-            let m = receiver.recv().await.unwrap();
 
-            if m.stop { return };
-            if m.connect {
-                info!("Command received: connect...");
-                // Spin and await the actual server here
-                // Parse the IP address string into an IpAddr
-                let ip: IpAddr = self.bind_address.parse().expect("Invalid IP address");
+        // TODO: get it from the right place
+        let ip = [127, 0, 0, 1];
+        let port = 8080;
+        
+        tokio::spawn(async move {
+            loop {
+                info!("Started runner. Waiting to start...");
+                let m = receiver.recv().await.unwrap();
 
-                // Create a SocketAddr from the IpAddr and port
-                let socket_addr = SocketAddr::new(ip, self.port);
-                let me = Arc::clone(&self);
-                let service = ServeDir::new(me.path.clone());
-                let server = hyper::server::Server::bind(&socket_addr)
-                    .serve(tower::make::Shared::new(service))
-                    .with_graceful_shutdown(async {
-                        loop {
-                            info!("Running and waiting for command to finish");
-                            let m = receiver.recv().await.unwrap();
-                            if m.stop { return };
-                            if m.connect { continue } // Not for me. Go wait another msg
-                            else { break }
-                        }
-                        info!("Gracefully terminating the HTTP server");
-                    });
+                if m.stop { return };
+                if m.connect {
+                    info!("Command received: connect...");
+                    // Spin and await the actual server here
+                    // Parse the IP address string into an IpAddr
+                    // let ip: IpAddr = self.bind_address.parse().expect("Invalid IP address");
 
-                server.await.expect("server error");
+                    // Create a SocketAddr from the IpAddr and port
+                    let socket_addr = SocketAddr::new(ip.into(), port);
+                    // let me = Arc::clone(&self);
+                    let p = String::from("");
+                    let service = ServeDir::new(p);
+                    let server = hyper::server::Server::bind(&socket_addr)
+                        .serve(tower::make::Shared::new(service))
+                        .with_graceful_shutdown(async {
+                            loop {
+                                info!("Running and waiting for command to finish");
+                                let m = receiver.recv().await.unwrap();
+                                if m.stop { return };
+                                if m.connect { continue } // Not for me. Go wait another msg
+                                else { break }
+                            }
+                            info!("Gracefully terminating the HTTP server");
+                        });
+
+                    server.await.expect("server error");
+                }
             }
-        }
+        })
     }
 }
 
