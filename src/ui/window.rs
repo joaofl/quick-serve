@@ -112,10 +112,10 @@ impl eframe::App for UI {
                 // Iterate over each known protocol, and draw its elements
                 for p in self.protocols.iter_mut() {
                     ui.group(|ui| {
-                        ui.add(Label::new(format!("{}", p.name)));
+                        ui.add(Label::new(format!("{}", p.protocol.to_string())));
                         ui.add(DragValue::new(&mut p.port).clamp_range(1..=50000));
 
-                        if ui.add(toggle(&mut p.toggle)).clicked() {
+                        if ui.add(toggle(&mut p.start)).clicked() {
 
                             let mut msg = p.clone();
                             msg.bind_ip = self.bind_ip.clone();

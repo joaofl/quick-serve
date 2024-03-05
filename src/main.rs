@@ -235,11 +235,12 @@ async fn main() {
             // cmd.port = cli_args.http.unwrap() as u16;;
 
             let cmd = CommandMsg {
-                toggle: true,
+                start: true,
                 port: cli_args.http.unwrap() as u16,
                 bind_ip,
                 path: path,
-                name: Protocol::Http.to_string().into(),
+                protocol: Protocol::Http,
+                ..Default::default()
             };
 
             let _ = channel.sender.send(cmd);
