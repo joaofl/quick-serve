@@ -3,13 +3,12 @@ use tokio::sync::broadcast;
 use std::path::PathBuf;
 
 
-#[derive(Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub enum Protocol {
+    #[default]
     Http,
     Tftp,
     Ftp,
-    #[default]
-    None,
 }
 
 impl Protocol {
@@ -18,7 +17,6 @@ impl Protocol {
             Protocol::Http => "http",
             Protocol::Ftp  => "ftp",
             Protocol::Tftp => "tftp",
-            _ => "none",
         }
     }
     pub fn get_default_port(&self) -> u16 {
@@ -26,7 +24,6 @@ impl Protocol {
             Protocol::Http => 8080,
             Protocol::Ftp  => 2121,
             Protocol::Tftp => 6969,
-            _ => 0,
         }
     }
 }
