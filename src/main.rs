@@ -1,6 +1,7 @@
 #![allow(warnings)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+use log::debug;
 use log::{error, info, warn, LevelFilter};
 // use tokio::sync::Mutex;
 use std::{path::PathBuf, process::exit};
@@ -130,59 +131,50 @@ async fn main() {
     let headless = true;
 
     ////////////////////////////////////////////////////////////////////////
-    // HTTP from here on
+    /// Spawn one thread per protocol and start waiting for command
+    /// to start or stop each server
     ////////////////////////////////////////////////////////////////////////
-    // let spawned_servers_c = SPAWNED_SERVERS.clone();
-    let mut rcv = channel.sender.subscribe();
-    tokio::spawn(async move {
-        loop {
-            let proto = rcv.recv().await.unwrap();
+    for protocol in &[Protocol::Http, Protocol::Tftp, Protocol::Ftp] {
+        let mut rcv = channel.sender.subscribe();
+        tokio::spawn(async move {
+            loop {
+                let msg = rcv.recv().await.unwrap();
 
-            if proto.toggle == true {
-                let server = <Server as HTTPRunner>::new(
-                    proto.path.into(), proto.bind_ip, proto.port
-                );
+                if msg.protocol != *protocol {
+                    debug!("\"not my business...\" said the {} thread", protocol.to_string());
+                    continue;
+                }
 
-                // Wait the receiver to listen before the sender sends the 1rst msg
-                // TODO: use some flag instead
-                sleep(Duration::from_millis(100)).await;
-                let _ = server.start();
-                info!("Started server");
+                if msg.start == true {
+                    let server;
+                    
+                    match msg.protocol {
+                        Protocol::Http =>{
+                            server = <Server as HTTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
+                        },
+                        Protocol::Ftp =>{
+                            server = <Server as FTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
+                        },
+                        Protocol::Tftp =>{
+                            server = <Server as TFTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
+                        },
+                    } 
 
-                // Once started, wait for termination
-                let proto = rcv.recv().await.unwrap();
-
-                let _ = server.stop();
-                info!("Server stopped");
+                    // Wait the receiver to listen before the sender sends the 1rst msg
+                    // TODO: use some flag instead
+                    sleep(Duration::from_millis(100)).await;
+                    let _ = server.start();
+                    info!("Started server");
+                    
+                    // Once started, wait for termination
+                    let msg = rcv.recv().await.unwrap();
+                    
+                    let _ = server.stop();
+                    info!("Server stopped");
+                }
             }
-        }
-    });
-    ////////////////////////////////////////////////////////////////////////
-    // TFTP from here on
-    ////////////////////////////////////////////////////////////////////////
-    // if cli_args.tftp.is_some() {
-    //     // TODO:in case of the gui version, these values should come from the UI
-    //     let port = cli_args.tftp.unwrap() as u16;
-    //     let tftp_server = Arc::new(<Server as TFTPRunner>::new(path.clone(), bind_ip.clone(), port));
-
-    //     // spawned_servers.push(tftp_server.clone());
-    //     TFTPRunner::runner(tftp_server.clone()).await;
-
-    //     let _ = tftp_server.start();
-    // }
-
-    ////////////////////////////////////////////////////////////////////////
-    // FTP from here on
-    ////////////////////////////////////////////////////////////////////////
-    // if cli_args.ftp.is_some() {
-    //     let port = cli_args.ftp.unwrap() as u16;
-    //     let ftp_server = Arc::new(<Server as FTPRunner>::new(path.clone(), bind_ip.clone(), port));
-
-    //     // spawned_servers.push(ftp_server.clone());
-    //     FTPRunner::runner(ftp_server.clone()).await;
-
-    //     let _ = ftp_server.start();
-    // }
+        });
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // Ctrl+c handler from here on
