@@ -1,19 +1,20 @@
-use log::{Level, Log, Metadata, Record};
+use log::{Log, Metadata, Record, LevelFilter};
 use std::sync::{Arc, Mutex};
 
-
 pub trait MyLoggerFn {
-    fn new () -> Self;
+    fn new (log_level: LevelFilter) -> Self;
 }
 
 pub struct MyLogger {
+    pub log_level: LevelFilter,
     pub logs: Arc<Mutex<String>>,
 }
 
 impl MyLoggerFn for MyLogger {
-    fn new () -> Self {
+    fn new (log_level: LevelFilter) -> Self {
         MyLogger {
-            logs: Arc::new(Mutex::new(String::new()))
+            logs: Arc::new(Mutex::new(String::new())),
+            log_level,
         }
     }
 }
@@ -22,7 +23,7 @@ impl Log for MyLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         // Determine whether to enable logging for the given metadata
         // For example, you can enable all levels or only certain levels
-        metadata.level() <= Level::Info
+        metadata.level() <= self.log_level
     }
 
     fn log(&self, record: &Record) {

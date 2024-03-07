@@ -98,12 +98,12 @@ struct Cli {
 async fn main() {
     let cli_args = Cli::parse();
 
-    // let mut log_level = "info";
-    // if cli_args.verbose > 0 {
-    //     log_level = "debug";
-    // }
+    let mut log_level = LevelFilter::Info;
+    if cli_args.verbose > 0 {
+        log_level = LevelFilter::Debug;
+    }
 
-    let logger = Box::new(MyLogger::new());
+    let logger = Box::new(MyLogger::new(log_level));
     // Clone the producer, so that we can pass it to the consumer inside the UI
     let logs = logger.logs.clone();
 
@@ -112,9 +112,6 @@ async fn main() {
     // Define the channel used to exchange with the UI
     let channel: DefaultChannel<CommandMsg> = Default::default();
 
-    // ::std::env::set_var("RUST_LOG", log_level);
-    // env_logger::builder()
-    //     .format_timestamp_secs();
 
     log::set_boxed_logger(logger).unwrap();
     log::set_max_level(LevelFilter::Trace); // Set the maximum log level
