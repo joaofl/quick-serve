@@ -99,7 +99,7 @@ impl eframe::App for UI {
 
                 ui.group(|ui| {
                     ui.horizontal(|ui| {
-                        let name_label = ui.label("Bind IP: ");
+                        let _name_label = ui.label("Bind IP: ");
                         ui.add(
                             TextEdit::singleline(&mut self.bind_ip)
                             .char_limit(15)

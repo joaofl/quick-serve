@@ -1,20 +1,17 @@
 use log::{debug, info};
 
 use tower_http::services::ServeDir;
-use std::net::{SocketAddr, IpAddr};
+use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::Arc;
 use crate::servers::Protocol;
 use async_trait::async_trait;
 use crate::utils::validation;
-use tokio::task::JoinHandle;
-
 use super::Server;
 
 #[async_trait]
 pub trait HTTPRunner {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
-    fn runner(&self) -> JoinHandle<()>;
+    fn runner(&self);
 }
 
 #[async_trait]
@@ -33,7 +30,7 @@ impl HTTPRunner for Server {
         s
     }
 
-    fn runner(&self) -> JoinHandle<()> {
+    fn runner(&self) {
         // Get notified about the server's spawned task
         let mut receiver = self.sender.subscribe();
 
@@ -43,12 +40,13 @@ impl HTTPRunner for Server {
         
         tokio::spawn(async move {
             loop {
-                info!("Started runner. Waiting to start...");
+                debug!("Runner started. Waiting command to connect...");
                 let m = receiver.recv().await.unwrap();
+                debug!("Message received");
 
-                if m.stop { return };
+                // if m.stop { return };
                 if m.connect {
-                    info!("Command received: connect...");
+                    info!("Connecting...");
                     // Spin and await the actual server here
                     // Parse the IP address string into an IpAddr
                     // let ip: IpAddr = self.bind_address.parse().expect("Invalid IP address");
@@ -58,23 +56,25 @@ impl HTTPRunner for Server {
                     // let me = Arc::clone(&self);
                     let p = String::from("");
                     let service = ServeDir::new(p);
-                    let server = hyper::server::Server::bind(&socket_addr)
+                    let _ = hyper::server::Server::bind(&socket_addr)
                         .serve(tower::make::Shared::new(service))
                         .with_graceful_shutdown(async {
                             loop {
-                                info!("Running and waiting for command to finish");
-                                let m = receiver.recv().await.unwrap();
-                                if m.stop { return };
-                                if m.connect { continue } // Not for me. Go wait another msg
-                                else { break }
+                                info!("Connected. Waiting command to disconnect...");
+                                let _m = receiver.recv().await.unwrap();
+                                // if m.stop { return };
+                                // if m.connect { continue } // Not for me. Go wait another msg
+                                // else { break }
+                                break;
                             }
-                            info!("Gracefully terminating the HTTP server");
-                        });
+                            info!("Gracefully terminated the HTTP server");
+                        })
+                        .await.expect("Error starting server...");
 
-                    server.await.expect("server error");
+                    break;
                 }
             }
-        })
+        });
     }
 }
 

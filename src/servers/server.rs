@@ -11,6 +11,8 @@ pub enum Protocol {
     Ftp,
 }
 
+pub const PROTOCOL_LIST: [&'static Protocol; 3] = [&Protocol::Http, &Protocol::Tftp, &Protocol::Ftp];
+
 impl Protocol {
     pub fn to_string(&self) -> &str {
         match self {
@@ -31,7 +33,6 @@ impl Protocol {
 #[derive(Default, Clone, Debug)]
 pub struct Message {
     pub connect: bool,
-    pub stop: bool,
 }
 
 pub struct Server {
@@ -59,7 +60,7 @@ impl Server {
         info!("Starting {} server bind to {}:{}", self.protocol.to_string(), self.bind_address, self.port);
         info!("Serving {}", self.path.to_string_lossy());
 
-        let s = Message{connect: true, stop: false};
+        let s = Message{connect: true};
         let _ = self.sender.send(s).map_err(|err| format!("Error sending message: {:?}", err))?;
         Ok(())
     }
@@ -69,9 +70,8 @@ impl Server {
         // Mostly required by the headless version (single sessions).
 
         // First stop and to then stop
-        let mut m = Message::default();
-        m.connect = false;
-        m.stop = true;
+        let m = Message {connect: false};
+
         // Send twice. Once to make sure the server is stopped (inner loop)
         // and the second to ensure runner exits.
         let _ = self.sender.send(m.clone());

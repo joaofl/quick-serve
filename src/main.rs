@@ -1,13 +1,9 @@
-#![allow(warnings)]
+// #![allow(warnings)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use log::debug;
-use log::{error, info, warn, LevelFilter};
-// use tokio::sync::Mutex;
-use std::{path::PathBuf, process::exit};
-// use lazy_static::lazy_static;
-// use std::ops::Deref;
-// use std::sync::Arc;
+use log::{info, warn, LevelFilter};
+use std::process::exit;
 
 mod utils;
 use utils::logger::*;
@@ -26,7 +22,6 @@ extern crate core;
 
 use tokio::time::{sleep, Duration};
 
-// #[cfg(feature = "ui")] use tokio::sync::broadcast::{channel, Receiver, Sender};
 #[cfg(feature = "ui")] mod ui;
 #[cfg(feature = "ui")] use crate::ui::window::*;
 #[cfg(feature = "ui")] use egui::{Style, Visuals};
@@ -120,23 +115,20 @@ async fn main() {
     //////////////////////////////////////////////////////////////////////
     // debug!("\n{:#?}\n", cli_args);
 
-    // lazy_static! {
-    //     static ref SPAWNED_SERVERS: Arc<Mutex<Vec<Arc<Server>>>> = Arc::new(Mutex::new(vec![]));
-    // }
-
     #[cfg(not(feature = "ui"))]
     let headless = true;
 
     ////////////////////////////////////////////////////////////////////////
-    /// Spawn one thread per protocol and start waiting for command
-    /// to start or stop each server
+    // Spawn one thread per protocol and start waiting for command
+    // to start or stop each server
     ////////////////////////////////////////////////////////////////////////
-    for protocol in &[Protocol::Http, Protocol::Tftp, Protocol::Ftp] {
+    for protocol in PROTOCOL_LIST {
         let mut rcv = channel.sender.subscribe();
         tokio::spawn(async move {
             loop {
-                let msg = rcv.recv().await.unwrap();
-
+                // debug!("Start waiting for messages");
+                // debug!("Done waiting for message... Checking it now");
+                let msg = rcv.recv().await.expect("Failed to receive message");
                 if msg.protocol != *protocol {
                     debug!("\"not my business...\" said the {} thread", protocol.to_string());
                     continue;
@@ -144,7 +136,7 @@ async fn main() {
 
                 if msg.start == true {
                     let server;
-                    
+
                     match msg.protocol {
                         Protocol::Http =>{
                             server = <Server as HTTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
@@ -164,7 +156,7 @@ async fn main() {
                     info!("Started server");
                     
                     // Once started, wait for termination
-                    let msg = rcv.recv().await.unwrap();
+                    let _msg = rcv.recv().await.unwrap();
                     
                     let _ = server.stop();
                     info!("Server stopped");
@@ -176,29 +168,12 @@ async fn main() {
     ////////////////////////////////////////////////////////////////////////
     // Ctrl+c handler from here on
     ////////////////////////////////////////////////////////////////////////
-
-    // if headless && spawned_runners.iter().count() == 0 {
-    //     error!("No server(s) specified. Run with -h for more info...");
-    //     exit(1);
-    // }
-
-    // Set up a handler for Ctrl+C signal
-    // let spawned_servers_c = &SPAWNED_SERVERS;
-
-    // if cli_args.headless == false {
-        
-    // }
-
     // TODO: only add handle if any server has been invoked
     // Add handle for Ctrl+C
     tokio::spawn(async move {
         ctrlc::set_handler(move || {
             warn!("Ctrl+C received. Closing connections and exiting.");
-            // Try to stop all servers gracefully
-            // let spawned_servers_locked = spawned_servers_c.lock().await;
-            // for server in spawned_servers_locked.iter() {
-            //     server.stop();
-            // }
+            //TODO: send a message to stop all servers and wait 10
 
             exit(1);
         }).expect("Error setting Ctrl+C handler");
@@ -215,23 +190,18 @@ async fn main() {
 
         let mut count = 0u8;
 
+        let cmd = CommandMsg {
+            start: true,
+            port: cli_args.http.unwrap() as u16,
+            bind_ip,
+            path: path,
+            protocol: Protocol::Http,
+            ..Default::default()
+        };
+
         // CHeck for each server invoked from the command line, and send 
         // messages accordingly to start each
         if cli_args.http.is_some() {
-            // let port = cli_args.http.unwrap() as u16;
-            // let mut cmd = CommandMsg::new(&Protocol::Http);
-            // cmd.toggle = true;
-            // cmd.port = cli_args.http.unwrap() as u16;;
-
-            let cmd = CommandMsg {
-                start: true,
-                port: cli_args.http.unwrap() as u16,
-                bind_ip,
-                path: path,
-                protocol: Protocol::Http,
-                ..Default::default()
-            };
-
             let _ = channel.sender.send(cmd);
             count += 1;
         }

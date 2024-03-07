@@ -37,29 +37,26 @@ impl FTPRunner for Server {
             let mut receiver = self.sender.subscribe();
             loop {
                 let m = receiver.recv().await.unwrap();
-                let mut receiver2 = self.sender.subscribe();
+                let mut receiver_c = self.sender.subscribe();
 
-                if m.stop { return };
                 if m.connect {
                     // Define new server
-                    let server = 
-                    libunftp::Server::with_fs(self.path.clone())
+                    let _ = libunftp::Server::with_fs(self.path.clone())
                         .passive_ports(50000..65535)
                         .metrics()
                         .shutdown_indicator(async move {
                             loop {
-                                let m2 = receiver2.recv().await.unwrap();
-                                if m2.stop { break }
-                                if m2.connect { continue } // Not for me. Go wait another msg
-                                else { break }
+                                let _ = receiver_c.recv().await.unwrap();
+                                break;
                             }
                             debug!("Gracefully terminating the FTP server");
-                            //Give 10 seconds to potential ongoing connections to finish, otherwise finish immediately
+                            //Give seconds to potential ongoing connections to finish, otherwise finish immediately
                             libunftp::options::Shutdown::new().grace_period(Duration::from_secs(5))
-                        });
+                        })
+                        .listen(format!("{}:{}", self.bind_address, self.port))
+                        .await;
 
-                    // Spin and await the actual server here
-                    let _ = server.listen(format!("{}:{}", self.bind_address, self.port)).await;
+                    break;
                 }
             }
         })
