@@ -213,7 +213,7 @@ async fn main() {
         else {
             // Run for 10 seconds...
             // TODO: make this a feature
-            sleep(Duration::from_secs(10)).await;
+            sleep(Duration::from_secs(20)).await;
         }
     }
     ////////////////////////////////////////////////////////////////////////

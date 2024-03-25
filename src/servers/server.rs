@@ -1,6 +1,6 @@
 use log::info;
 use tokio::sync::broadcast;
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 
 #[derive(Debug, Default, PartialEq, Clone)]
@@ -38,7 +38,7 @@ pub struct Message {
 pub struct Server {
     pub sender: broadcast::Sender<Message>,
     pub protocol: Protocol,
-    pub path: PathBuf,
+    pub path: Arc<PathBuf>,
     pub bind_address: String,
     pub port: u16
 }
@@ -48,7 +48,7 @@ impl Default for Server {
         Server {
             sender: broadcast::channel(10).0,
             protocol: Protocol::default(),
-            path: PathBuf::default(),
+            path: Arc::new(PathBuf::default()),
             bind_address: String::default(),
             port: 0,
         }

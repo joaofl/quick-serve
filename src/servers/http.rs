@@ -1,8 +1,10 @@
+// use egui::epaint::tessellator::path;
 use log::{debug, info};
 
 use tower_http::services::ServeDir;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::sync::Arc;
 use crate::servers::Protocol;
 use async_trait::async_trait;
 use crate::utils::validation;
@@ -21,7 +23,7 @@ impl HTTPRunner for Server {
 
         validation::validate_path(&path).expect("Invalid path");
         validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
-        s.path = path;
+        s.path = Arc::new(path);
         s.bind_address = bind_ip;
         s.port = port;
 
@@ -36,7 +38,8 @@ impl HTTPRunner for Server {
 
         // TODO: get it from the right place
         let ip = [127, 0, 0, 1];
-        let port = 8080;
+        // let port = self.port;
+        let path = *self.path.clone();
         
         tokio::spawn(async move {
             loop {
@@ -50,12 +53,13 @@ impl HTTPRunner for Server {
                     // Spin and await the actual server here
                     // Parse the IP address string into an IpAddr
                     // let ip: IpAddr = self.bind_address.parse().expect("Invalid IP address");
+                    // let me = Arc::clone(&self);
 
                     // Create a SocketAddr from the IpAddr and port
-                    let socket_addr = SocketAddr::new(ip.into(), port);
+                    let socket_addr = SocketAddr::new(ip.into(), self.port);
                     // let me = Arc::clone(&self);
-                    let p = String::from("");
-                    let service = ServeDir::new(p);
+                    // let p = String::from("");
+                    let service = ServeDir::new(path);
                     let _ = hyper::server::Server::bind(&socket_addr)
                         .serve(tower::make::Shared::new(service))
                         .with_graceful_shutdown(async {

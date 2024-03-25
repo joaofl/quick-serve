@@ -24,7 +24,7 @@ impl TFTPRunner for Server {
         let path = validation::ensure_trailing_slash(&path);
         validation::validate_path(&path).expect("Invalid path");
         validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
-        s.path = path;
+        s.path = Arc::new(path);
         s.bind_address = bind_ip;
         s.port = port;
 
@@ -33,6 +33,11 @@ impl TFTPRunner for Server {
         return s;
     }
     async fn runner(self: Arc<Self>) -> JoinHandle<()> {
+
+        let path = self.path.clone();
+        let bind_address = self.bind_address.clone();
+        let port = self.port;
+
         tokio::spawn(async move {
             // Get notified about the server's spawned task
             let mut receiver = self.sender.subscribe();

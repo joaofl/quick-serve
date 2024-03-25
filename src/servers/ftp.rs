@@ -23,7 +23,7 @@ impl FTPRunner for Server {
 
         validation::validate_path(&path).expect("Invalid path");
         validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
-        s.path = path;
+        s.path = Arc::new(path);
         s.bind_address = bind_ip;
         s.port = port;
 
@@ -41,7 +41,7 @@ impl FTPRunner for Server {
 
                 if m.connect {
                     // Define new server
-                    let _ = libunftp::Server::with_fs(self.path.clone())
+                    let _ = libunftp::Server::with_fs(*__self.path.clone())
                         .passive_ports(50000..65535)
                         .metrics()
                         .shutdown_indicator(async move {
