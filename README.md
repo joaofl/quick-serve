@@ -103,15 +103,18 @@ Options:
 - [x] Command line
 - [ ] Local interface
 - [ ] Web interface
+- [ ] Terminal interface
 
 ### Functionalities
 - [ ] Serve `n` files and exit
 - [ ] Serve for `t` seconds and exit
 - [ ] Show number of files being served
 - [ ] Report transfer rate
-- [ ] Report transfered files
-- [ ] Show statistics in the end
+- [ ] Report transferred files
+- [ ] Show statistics when exit
 - [ ] Color-code logs according to protocol
 - [ ] Add log filtering options
 - [ ] Refine on each protocol's specific logs
 
+## TODO
+- [ ] Fix excessive CPU usage when using the UI
