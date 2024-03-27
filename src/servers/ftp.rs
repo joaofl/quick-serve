@@ -6,12 +6,14 @@ use super::Server;
 use async_trait::async_trait;
 use crate::servers::Protocol;
 use crate::utils::validation;
+use tokio::task::JoinHandle;
+use std::sync::Arc;
 
 
 #[async_trait]
 pub trait FTPRunner {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
-    async fn runner(&self);
+    async fn runner(&self) -> JoinHandle<()>;
 }
 
 #[async_trait]
@@ -21,46 +23,46 @@ impl FTPRunner for Server {
 
         validation::validate_path(&path).expect("Invalid path");
         validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
-        s.path = path;
+        s.path = Arc::new(path);
         s.bind_address = bind_ip;
         s.port = port;
 
         s.protocol = Protocol::Ftp;
-        return s;
+        s
     }
 
-    async fn runner(&self) {
-        // Get notified about the server's spawned task
+    async fn runner(&self) -> JoinHandle<()> {
         let mut receiver = self.sender.subscribe();
-        
-        loop {
-            let m = receiver.recv().await.unwrap();
-            let mut receiver2 = self.sender.subscribe();
 
-            if m.terminate { return };
-            if m.connect {
-                // Define new server
-                let server = 
-                libunftp::Server::with_fs(self.path.clone())
-                    .passive_ports(50000..65535)
-                    .metrics()
-                    .shutdown_indicator(async move {
-                        // let r2 = receiver_2.clone();
-                        loop {
-                            let m2 = receiver2.recv().await.unwrap();
-                            if m2.terminate { break }
-                            if m2.connect { continue } // Not for me. Go wait another msg
-                            else { break }
-                        }
-                        debug!("Gracefully terminating the FTP server");
-                        //Give 10 seconds to potential ongoing connections to finish, otherwise finish immediately
-                        libunftp::options::Shutdown::new().grace_period(Duration::from_secs(5))
-                    });
+        let bind_address = self.bind_address.clone();
+        let port = self.port;
 
-                // Spin and await the actual server here
-                let _ = server.listen(format!("{}:{}", self.bind_address, self.port)).await;
+        tokio::spawn(async move {
+            // Get notified about the server's spawned task
+            loop {
+                let m = receiver.recv().await.unwrap();
+                if m.connect {
+                    // Define new server
+                    let _ = libunftp::Server::with_fs("/tmp/")
+                        .passive_ports(50000..65535)
+                        .metrics()
+                        .shutdown_indicator(async move {
+                            loop {
+                                let _ = receiver.recv().await.unwrap();
+                                break;
+                            }
+                            debug!("Gracefully terminating the FTP server");
+                            // Give a few seconds to potential ongoing connections to finish, 
+                            // otherwise finish immediately
+                            libunftp::options::Shutdown::new().grace_period(Duration::from_secs(5))
+                        })
+                        .listen(format!("{}:{}", bind_address, port))
+                        .await;
+
+                    break;
+                }
             }
-        }
+        })
     }
 }
 

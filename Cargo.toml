@@ -2,7 +2,7 @@
 [package]
 authors =  ["João Loureiro"]
 name = "quick-serve"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/joaofl/quick-serve"
@@ -10,10 +10,13 @@ homepage = "https://github.com/joaofl/quick-serve"
 description = "Quick-serve: A zero-config, multi-platform, multi-protocol standalone server for a prompt file serving."
 categories = ["networking", "command-line-utilities", "development-tools"]
 
+[features]
+ui = ["dep:egui", "dep:eframe", "dep:rfd"]
+default = ["ui"]
 
 [dependencies]
 # TODO: Put only the used features
-tokio = { version = "1.35.1", features = ["full"]}
+tokio = { version = "1.36.0", features = ["full"]}
 futures = "0.3.30"
 async-trait = "0.1.77"
 
@@ -31,19 +34,24 @@ tower = { version = "0.4.13", features = ["full"] }
 
 # Log related
 log = "0.4.20"
-env_logger = "0.11.0"
+env_logger = "0.11.2"
 
 # For the headless version
-clap = { version = "4.4.13", features = ["derive"] }
+clap = { version = "4.5.1", features = ["derive"] }
 ctrlc = "3.4.2"
 sha2 = "0.10.8"
 
+# For the gui version
+egui = {version = "0.27.0", optional = true}
+eframe = {version = "0.27.0", features = ["wayland"], optional = true}
+rfd = {version = "0.14.0", optional = true}
+
 [dev-dependencies]
 sha2 = "0.10.8"
-tempfile = "3.9.0"
+tempfile = "3.10.0"
 rand = "0.8.5"
-assert_cmd = "2.0.12"
-predicates = "3.0.4"
+assert_cmd = "2.0.14"
+predicates = "3.1.0"
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.

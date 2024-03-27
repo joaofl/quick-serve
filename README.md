@@ -23,11 +23,23 @@ multiple protocols, was headless, and supported various platforms. Unlike many d
 Windows or Linux, with or without a UI, my app aims to bridge the gap by offering a versatile, multi-platform, and 
 protocol-agnostic solution.
 
+## Dependencies
+
+### Fedora
+```sh
+sudo dnf install glibc2-devel atk-devel cairo-devel pango-devel gdk-pixbuf2-devel gtk3-devel
+```
+
+### Ubuntu
+```sh
+sudo apt install libatk1.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libgtk-3-dev
+```
+
 ## Install and Run
 
 ```sh
 cargo install quick-serve
-quick-serve -h
+quick-serve
 ```
 
 ## Build and Run
@@ -35,7 +47,26 @@ quick-serve -h
 ```sh
 git clone https://github.com/joaofl/quick-serve.git
 cd quick-serve
-cargo run --release -- -h
+cargo run --release
+```
+
+The `ui` is optional and can be refrained from compilation with:
+
+```sh
+cargo build --release --no-default-features
+```
+
+Even if it is compiled, the UI can still be disabled at runtime.
+
+## Cross compile:
+
+```sh
+sudo dnf install mingw64-gcc
+cargo install cross
+
+./cross-build-all
+# or
+cross build --release
 ```
 
 ## Usage
@@ -72,15 +103,18 @@ Options:
 - [x] Command line
 - [ ] Local interface
 - [ ] Web interface
+- [ ] Terminal interface
 
 ### Functionalities
 - [ ] Serve `n` files and exit
 - [ ] Serve for `t` seconds and exit
 - [ ] Show number of files being served
 - [ ] Report transfer rate
-- [ ] Report transfered files
-- [ ] Show statistics in the end
+- [ ] Report transferred files
+- [ ] Show statistics when exit
 - [ ] Color-code logs according to protocol
 - [ ] Add log filtering options
 - [ ] Refine on each protocol's specific logs
 
+## TODO
+- [ ] Fix excessive CPU usage when using the UI
