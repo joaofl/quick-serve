@@ -3,6 +3,7 @@ use log::{debug, info};
 
 use tower_http::services::ServeDir;
 use std::net::SocketAddr;
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
 use crate::servers::Protocol;
@@ -37,9 +38,11 @@ impl HTTPRunner for Server {
         let mut receiver = self.sender.subscribe();
 
         // TODO: get it from the right place
+        // Parse the IP address string into an IpAddr
+        // let ip: IpAddr = self.bind_address.parse().expect("Invalid IP address");
         let ip = [127, 0, 0, 1];
-        // let port = self.port;
-        let path = *self.path.clone();
+        let port = self.port;
+        let path = self.path.clone();
         
         tokio::spawn(async move {
             loop {
@@ -47,19 +50,11 @@ impl HTTPRunner for Server {
                 let m = receiver.recv().await.unwrap();
                 debug!("Message received");
 
-                // if m.stop { return };
                 if m.connect {
                     info!("Connecting...");
-                    // Spin and await the actual server here
-                    // Parse the IP address string into an IpAddr
-                    // let ip: IpAddr = self.bind_address.parse().expect("Invalid IP address");
-                    // let me = Arc::clone(&self);
-
                     // Create a SocketAddr from the IpAddr and port
-                    let socket_addr = SocketAddr::new(ip.into(), self.port);
-                    // let me = Arc::clone(&self);
-                    // let p = String::from("");
-                    let service = ServeDir::new(path);
+                    let socket_addr = SocketAddr::new(ip.into(), port);
+                    let service = ServeDir::new(path.deref());
                     let _ = hyper::server::Server::bind(&socket_addr)
                         .serve(tower::make::Shared::new(service))
                         .with_graceful_shutdown(async {

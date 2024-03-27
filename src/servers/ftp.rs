@@ -13,7 +13,7 @@ use std::sync::Arc;
 #[async_trait]
 pub trait FTPRunner {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
-    async fn runner(self: Arc<Self>) -> JoinHandle<()>;
+    async fn runner(&self) -> JoinHandle<()>;
 }
 
 #[async_trait]
@@ -31,29 +31,32 @@ impl FTPRunner for Server {
         s
     }
 
-    async fn runner(self: Arc<Self>) -> JoinHandle<()> {
+    async fn runner(&self) -> JoinHandle<()> {
+        let mut receiver = self.sender.subscribe();
+
+        let bind_address = self.bind_address.clone();
+        let port = self.port;
+
         tokio::spawn(async move {
             // Get notified about the server's spawned task
-            let mut receiver = self.sender.subscribe();
             loop {
                 let m = receiver.recv().await.unwrap();
-                let mut receiver_c = self.sender.subscribe();
-
                 if m.connect {
                     // Define new server
-                    let _ = libunftp::Server::with_fs(*__self.path.clone())
+                    let _ = libunftp::Server::with_fs("/tmp/")
                         .passive_ports(50000..65535)
                         .metrics()
                         .shutdown_indicator(async move {
                             loop {
-                                let _ = receiver_c.recv().await.unwrap();
+                                let _ = receiver.recv().await.unwrap();
                                 break;
                             }
                             debug!("Gracefully terminating the FTP server");
-                            //Give seconds to potential ongoing connections to finish, otherwise finish immediately
+                            // Give a few seconds to potential ongoing connections to finish, 
+                            // otherwise finish immediately
                             libunftp::options::Shutdown::new().grace_period(Duration::from_secs(5))
                         })
-                        .listen(format!("{}:{}", self.bind_address, self.port))
+                        .listen(format!("{}:{}", bind_address, port))
                         .await;
 
                     break;

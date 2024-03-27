@@ -5,7 +5,7 @@ use async_trait::async_trait;
 
 // Create the TFTP server.
 use async_tftp::server::TftpServerBuilder;
-use std::path::PathBuf;
+use std::{ops::Deref, path::PathBuf};
 use crate::utils::validation;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
@@ -13,7 +13,7 @@ use tokio::task::JoinHandle;
 #[async_trait]
 pub trait TFTPRunner {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
-    async fn runner(self: Arc<Self>) -> JoinHandle<()>;
+    async fn runner(&self) -> JoinHandle<()>;
 }
 
 #[async_trait]
@@ -32,26 +32,29 @@ impl TFTPRunner for Server {
 
         return s;
     }
-    async fn runner(self: Arc<Self>) -> JoinHandle<()> {
+    async fn runner(&self) -> JoinHandle<()> {
 
         let path = self.path.clone();
+
         let bind_address = self.bind_address.clone();
         let port = self.port;
+        let mut receiver = self.sender.subscribe();
 
         tokio::spawn(async move {
-            // Get notified about the server's spawned task
-            let mut receiver = self.sender.subscribe();
-
             loop {
+                // Get notified about the server's spawned task
                 let msg = receiver.recv().await.unwrap();
 
                 if msg.connect {
                     let tsk = tokio::spawn({
-                        let me = Arc::clone(&self);
+                        let path = path.clone();
+                        let bind_address = bind_address.clone();
+                        let port = port;
+                        
                         async move {
-                            let addr = format!("{}:{}", me.bind_address, me.port);
+                            let addr = format!("{}:{}", bind_address, port);
                             let tftpd =
-                                TftpServerBuilder::with_dir_ro(me.path.clone()).unwrap()
+                                TftpServerBuilder::with_dir_ro(path.deref()).unwrap()
                                     .bind(addr.parse().unwrap())
                                     .build().await.unwrap();
 
