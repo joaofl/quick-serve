@@ -1,19 +1,20 @@
+use std::net::IpAddr;
 use std::path::PathBuf;
-use log::{debug};
+use std::str::FromStr;
+use log::{debug, info};
 use unftp_sbe_fs::ServerExt;
 use std::time::Duration;
 use super::Server;
 use async_trait::async_trait;
 use crate::servers::Protocol;
 use crate::utils::validation;
-use tokio::task::JoinHandle;
 use std::sync::Arc;
 
 
 #[async_trait]
 pub trait FTPRunner {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
-    async fn runner(&self) -> JoinHandle<()>;
+    fn runner(&self);
 }
 
 #[async_trait]
@@ -24,30 +25,37 @@ impl FTPRunner for Server {
         validation::validate_path(&path).expect("Invalid path");
         validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
         s.path = Arc::new(path);
-        s.bind_address = bind_ip;
+        s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
         s.port = port;
 
         s.protocol = Protocol::Ftp;
+        FTPRunner::runner(&s);
         s
     }
 
-    async fn runner(&self) -> JoinHandle<()> {
+    fn runner(&self) {
         let mut receiver = self.sender.subscribe();
 
-        let bind_address = self.bind_address.clone();
+        let bind_address = self.bind_address;
         let port = self.port;
+        let path = self.path.to_string_lossy().to_string();
 
         tokio::spawn(async move {
-            // Get notified about the server's spawned task
+
             loop {
+                debug!("FTP runner started... Waiting command to connect...");
                 let m = receiver.recv().await.unwrap();
+                debug!("Message received");
+
                 if m.connect {
+                    info!("Connecting...");
                     // Define new server
-                    let _ = libunftp::Server::with_fs("/tmp/")
+                    let _ = libunftp::Server::with_fs(path)
                         .passive_ports(50000..65535)
                         .metrics()
                         .shutdown_indicator(async move {
                             loop {
+                                info!("Connected. Waiting command to disconnect...");
                                 let _ = receiver.recv().await.unwrap();
                                 break;
                             }
@@ -57,12 +65,11 @@ impl FTPRunner for Server {
                             libunftp::options::Shutdown::new().grace_period(Duration::from_secs(5))
                         })
                         .listen(format!("{}:{}", bind_address, port))
-                        .await;
-
+                        .await.expect("Error starting the HTTP server...");
                     break;
                 }
             }
-        })
+        });
     }
 }
 

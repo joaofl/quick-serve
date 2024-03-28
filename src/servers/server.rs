@@ -1,6 +1,8 @@
 use log::info;
 use tokio::sync::broadcast;
+use std::str::FromStr;
 use std::{path::PathBuf, sync::Arc};
+use std::net::{IpAddr};
 
 
 #[derive(Debug, Default, PartialEq, Clone)]
@@ -39,7 +41,7 @@ pub struct Server {
     pub sender: broadcast::Sender<Message>,
     pub protocol: Protocol,
     pub path: Arc<PathBuf>,
-    pub bind_address: String,
+    pub bind_address: IpAddr,
     pub port: u16
 }
 
@@ -49,7 +51,7 @@ impl Default for Server {
             sender: broadcast::channel(10).0,
             protocol: Protocol::default(),
             path: Arc::new(PathBuf::default()),
-            bind_address: String::default(),
+            bind_address: IpAddr::from_str("127.0.0.1").unwrap(),
             port: 0,
         }
     }

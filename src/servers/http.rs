@@ -2,9 +2,10 @@
 use log::{debug, info};
 
 use tower_http::services::ServeDir;
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::ops::Deref;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 use crate::servers::Protocol;
 use async_trait::async_trait;
@@ -24,8 +25,9 @@ impl HTTPRunner for Server {
 
         validation::validate_path(&path).expect("Invalid path");
         validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
+
         s.path = Arc::new(path);
-        s.bind_address = bind_ip;
+        s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
         s.port = port;
 
         s.protocol = Protocol::Http;
@@ -34,13 +36,9 @@ impl HTTPRunner for Server {
     }
 
     fn runner(&self) {
-        // Get notified about the server's spawned task
         let mut receiver = self.sender.subscribe();
 
-        // TODO: get it from the right place
-        // Parse the IP address string into an IpAddr
-        // let ip: IpAddr = self.bind_address.parse().expect("Invalid IP address");
-        let ip = [127, 0, 0, 1];
+        let bind_address = self.bind_address;
         let port = self.port;
         let path = self.path.clone();
         
@@ -53,7 +51,7 @@ impl HTTPRunner for Server {
                 if m.connect {
                     info!("Connecting...");
                     // Create a SocketAddr from the IpAddr and port
-                    let socket_addr = SocketAddr::new(ip.into(), port);
+                    let socket_addr = SocketAddr::new(bind_address, port);
                     let service = ServeDir::new(path.deref());
                     let _ = hyper::server::Server::bind(&socket_addr)
                         .serve(tower::make::Shared::new(service))
@@ -61,15 +59,11 @@ impl HTTPRunner for Server {
                             loop {
                                 info!("Connected. Waiting command to disconnect...");
                                 let _m = receiver.recv().await.unwrap();
-                                // if m.stop { return };
-                                // if m.connect { continue } // Not for me. Go wait another msg
-                                // else { break }
                                 break;
                             }
                             info!("Gracefully terminated the HTTP server");
                         })
-                        .await.expect("Error starting server...");
-
+                        .await.expect("Error starting the HTTP server...");
                     break;
                 }
             }
@@ -77,6 +71,10 @@ impl HTTPRunner for Server {
     }
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////
+//                                        TESTS                                    //
+/////////////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
     use crate::tests::common::tests::*;
