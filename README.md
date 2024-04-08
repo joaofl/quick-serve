@@ -3,11 +3,21 @@
 ![](https://tokei.rs/b1/github/joaofl/quick-serve?category=code)
 [![](https://deps.rs/repo/github/joaofl/quick-serve/status.svg)](https://deps.rs/repo/github/joaofl/quick-serve)
 
-![alt text](logo.png "Logo")
+<p align="center"> 
+  <p align="center"> <img src="media/logo.png" alt="Logo" width="600"/> </p>
+</p>
 
 # Quick-serve
 No setup, zero-config, multi-platform, multi-protocol, standalone server for developers or whoever wants to promptly 
 serve some files over the network.
+
+It can be used both headless or for an even more friendly experience, it can be used with a GUI:
+
+<!-- ![alt text](media/screenshot.png "Screenshot") -->
+
+<p align="center">
+  <img src="media/screenshot.png" alt="Screenshot" width="600"/>
+</p>
 
 ## Motivation
 
@@ -22,6 +32,25 @@ I developed this application as an exercise in learning Rust because I couldn't 
 multiple protocols, was headless, and supported various platforms. Unlike many dedicated servers tailored for either 
 Windows or Linux, with or without a UI, my app aims to bridge the gap by offering a versatile, multi-platform, and 
 protocol-agnostic solution.
+
+## Usage
+
+```shell
+Quick-serve
+
+Usage: quick-serve [OPTIONS]
+
+Options:
+  -b, --bind-ip=<IP>     Bind IP [default: 127.0.0.1]
+  -p, --serve-dir=<DIR>  Path to serve [default: /tmp/]
+  -v, --verbose...       Verbose logging
+  -H, --http[=<PORT>]    Start the HTTP server [default port: 8080]
+  -f, --ftp[=<PORT>]     Start the FTP server [default port: 2121]
+  -t, --tftp[=<PORT>]    Start the TFTP server [default port: 6969]
+  -h, --help             Print help (see more with '--help')
+  -V, --version          Print version
+```
+
 
 ## Dependencies
 
@@ -69,24 +98,6 @@ cargo install cross
 cross build --release
 ```
 
-## Usage
-
-```shell
-Quick-serve
-
-Usage: quick-serve [OPTIONS]
-
-Options:
-  -b, --bind-ip=<IP>     Bind IP [default: 127.0.0.1]
-  -p, --serve-dir=<DIR>  Path to serve [default: /tmp/]
-  -v, --verbose...       Verbose logging
-  -H, --http[=<PORT>]    Start the HTTP server [default port: 8080]
-  -f, --ftp[=<PORT>]     Start the FTP server [default port: 2121]
-  -t, --tftp[=<PORT>]    Start the TFTP server [default port: 6969]
-  -h, --help             Print help (see more with '--help')
-  -V, --version          Print version
-```
-
 ## Implementation Goals
 
 ### Supported Protocols
@@ -101,7 +112,7 @@ Options:
 
 ### Interface
 - [x] Command line
-- [ ] Local interface
+- [x] Local interface
 - [ ] Web interface
 - [ ] Terminal interface
 
