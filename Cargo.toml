@@ -2,7 +2,7 @@
 [package]
 authors =  ["João Loureiro"]
 name = "quick-serve"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/joaofl/quick-serve"
@@ -13,9 +13,9 @@ categories = ["networking", "command-line-utilities", "development-tools"]
 
 [dependencies]
 # TODO: Put only the used features
-tokio = { version = "1.35.1", features = ["full"]}
+tokio = { version = "1.37.0", features = ["full"]}
 futures = "0.3.30"
-async-trait = "0.1.77"
+async-trait = "0.1.79"
 
 # FTP server deps
 libunftp = "0.19.1"
@@ -30,19 +30,19 @@ tower-http = { version = "0.4.4", features = ["full"] }
 tower = { version = "0.4.13", features = ["full"] }
 
 # Log related
-log = "0.4.20"
-env_logger = "0.11.0"
+log = "0.4.21"
+env_logger = "0.11.3"
 
 # For the headless version
-clap = { version = "4.4.13", features = ["derive"] }
-ctrlc = "3.4.2"
+clap = { version = "4.5.4", features = ["derive"] }
+ctrlc = "3.4.4"
 sha2 = "0.10.8"
 
 [dev-dependencies]
 sha2 = "0.10.8"
-tempfile = "3.9.0"
+tempfile = "3.10.1"
 rand = "0.8.5"
-assert_cmd = "2.0.12"
+assert_cmd = "2.0.14"
 predicates = "3.0.4"
 
 [profile.release]
