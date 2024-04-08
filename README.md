@@ -117,4 +117,4 @@ Options:
 - [ ] Refine on each protocol's specific logs
 
 ## TODO
-- [ ] Fix excessive CPU usage when using the UI
+- [x] Fix excessive CPU usage when using the UI

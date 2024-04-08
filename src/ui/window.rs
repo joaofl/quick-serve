@@ -32,7 +32,7 @@ pub struct UI {
     path: String,
 
     pub channel: DefaultChannel<CommandMsg>,
-    pub logs: Arc<Mutex<String>>,
+    pub logs: Arc<Mutex<Vec<String>>>,
 }
 
 impl UI {
@@ -57,7 +57,7 @@ impl eframe::App for UI {
         egui::CentralPanel::default().show(ctx, |ui| {
 
             ctx.set_pixels_per_point(self.aspect_ratio);
-            ctx.request_repaint();
+            ctx.request_repaint_after(std::time::Duration::from_millis(250));
 
             egui::menu::bar(ui, |ui| {
                 egui::ComboBox::from_label("")
@@ -133,19 +133,19 @@ impl eframe::App for UI {
             ui.add_space(5.0);
             ui.separator();
 
+            let text_style = TextStyle::Monospace;
+            let logs = self.logs.lock().unwrap();
+            let row_height = ui.text_style_height(&text_style);
+            let num_rows = logs.len();
+
             egui::ScrollArea::both()
                 .auto_shrink(false)
                 .stick_to_bottom(true)
                 .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded)
-                .show(ui, |ui| {
-                    ui.with_layout(
-                        egui::Layout::top_down(egui::Align::LEFT).with_cross_justify(true),
-                        |ui| {
-                            // Acquire the lock
-                            let logs = self.logs.lock().unwrap().clone();
-                            ui.label( egui::RichText::new(logs).text_style(TextStyle::Monospace) );
-                        },
-                    );
+                .show_rows(ui, row_height, num_rows, |ui, row_range| {
+                    for row in row_range {
+                        ui.label( egui::RichText::new(&logs[row]).text_style(text_style.clone()) );
+                    }
                 });
         });
 

@@ -7,13 +7,13 @@ pub trait MyLoggerFn {
 
 pub struct MyLogger {
     pub log_level: LevelFilter,
-    pub logs: Arc<Mutex<String>>,
+    pub logs: Arc<Mutex<Vec<String>>>,
 }
 
 impl MyLoggerFn for MyLogger {
     fn new (log_level: LevelFilter) -> Self {
         MyLogger {
-            logs: Arc::new(Mutex::new(String::new())),
+            logs: Arc::new(Mutex::new(Vec::new())),
             log_level,
         }
     }
@@ -36,7 +36,7 @@ impl Log for MyLogger {
             );
 
             println!("{}", log_line);
-            self.logs.lock().unwrap().push_str(&format!("{}\n", log_line));
+            self.logs.lock().unwrap().push(log_line.clone());
         }
     }
 
