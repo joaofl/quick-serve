@@ -102,11 +102,9 @@ async fn main() {
     // Clone the producer, so that we can pass it to the consumer inside the UI
     let logs = logger.logs.clone();
 
-
     #[cfg(feature = "ui")]
     // Define the channel used to exchange with the UI
     let channel: DefaultChannel<CommandMsg> = Default::default();
-
 
     log::set_boxed_logger(logger).unwrap();
     log::set_max_level(LevelFilter::Trace); // Set the maximum log level
@@ -190,30 +188,47 @@ async fn main() {
 
         let mut count = 0u8;
 
-        let cmd = CommandMsg {
+        let mut cmd = CommandMsg {
             start: true,
-            port: cli_args.http.unwrap() as u16,
             bind_ip,
             path: path,
-            protocol: Protocol::Http,
             ..Default::default()
         };
 
         // CHeck for each server invoked from the command line, and send 
         // messages accordingly to start each
         if cli_args.http.is_some() {
-            let _ = channel.sender.send(cmd);
+            cmd.protocol = Protocol::Http;
+            cmd.port = cli_args.http.unwrap() as u16;
+            let _ = channel.sender.send(cmd.clone());
+            count += 1;
+        }
+
+        if cli_args.ftp.is_some() {
+            cmd.protocol = Protocol::Ftp;
+            cmd.port = cli_args.ftp.unwrap() as u16;
+            let _ = channel.sender.send(cmd.clone());
+            count += 1;
+        }
+
+        if cli_args.tftp.is_some() {
+            cmd.protocol = Protocol::Tftp;
+            cmd.port = cli_args.tftp.unwrap() as u16;
+            let _ = channel.sender.send(cmd.clone());
             count += 1;
         }
 
         if count == 0 {
-            println!("No server specified. Use -h to get help");
+            println!("No server specified. Use -h for help");
             exit(2);
         }
         else {
-            // Run for 10 seconds...
-            // TODO: make this a feature
-            sleep(Duration::from_secs(20)).await;
+            // TODO: make this a feature: run for N seconds and exit
+            // TODO: get some periodic stats as well
+            loop {
+                sleep(Duration::from_secs(60)).await;
+            }
+
         }
     }
     ////////////////////////////////////////////////////////////////////////

@@ -24,6 +24,8 @@ impl FTPRunner for Server {
 
         validation::validate_path(&path).expect("Invalid path");
         validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
+
+        let path = validation::ensure_trailing_slash(&path);
         s.path = Arc::new(path);
         s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
         s.port = port;
