@@ -6,23 +6,9 @@ use egui::{Label, TextStyle};
 // use log::info;
 use crate::ui::toggle_switch::toggle;
 use crate::servers::server::Protocol;
-use tokio::sync::broadcast::{channel, Receiver, Sender};
+use crate::DefaultChannel;
 
 use crate::messages::CommandMsg;
-
-// Define a struct to hold both the sender and receiver
-pub struct DefaultChannel<T> {
-    pub sender: Sender<T>,
-    pub receiver: Receiver<T>,
-}
-
-impl<T: Clone> Default for DefaultChannel<T> {
-    fn default() -> Self {
-        let (sender, receiver) = channel (50);
-        DefaultChannel { sender, receiver }
-    }
-}
-
 
 #[derive(Default)]
 pub struct UI {

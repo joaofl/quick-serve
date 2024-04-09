@@ -1,5 +1,5 @@
 use crate::servers::server::Protocol;
-
+use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 #[derive(Clone, Debug, Default)]
 pub struct CommandMsg {
@@ -19,5 +19,18 @@ impl CommandMsg {
             protocol: prot.clone(),
             ..Default::default()
         }
+    }
+}
+
+// Define a struct to hold both the sender and receiver
+pub struct DefaultChannel<T> {
+    pub sender: Sender<T>,
+    pub receiver: Receiver<T>,
+}
+
+impl<T: Clone> Default for DefaultChannel<T> {
+    fn default() -> Self {
+        let (sender, receiver) = channel (100);
+        DefaultChannel { sender, receiver }
     }
 }
