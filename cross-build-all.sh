@@ -38,6 +38,5 @@ for target in "${TARGETS[@]}"; do
         cp -v target/${target}/release/quick-serve-headless${ext}  assets/quick-serve-headless-${target}${ext} 2>/dev/null
 done
 
-# Clean up
-echo "Cleaning up..."
+# echo "Cleaning up..."
 # cargo clean
