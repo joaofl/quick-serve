@@ -10,6 +10,15 @@ homepage = "https://github.com/joaofl/quick-serve"
 description = "Quick-serve: A zero-config, multi-platform, multi-protocol standalone server for a prompt file serving."
 categories = ["networking", "command-line-utilities", "development-tools"]
 
+[[bin]]
+name = "quick-serve-headless"
+path = "src/main.rs"
+
+[[bin]]
+name = "quick-serve"
+path = "src/main.rs"
+required-features = ["ui"]
+
 [features]
 ui = ["dep:egui", "dep:eframe", "dep:rfd"]
 default = ["ui"]
