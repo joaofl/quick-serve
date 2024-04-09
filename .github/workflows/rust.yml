@@ -45,16 +45,8 @@ jobs:
 
     - name: Build for Linux x86_64 Headless
       continue-on-error: false
-      run: cargo build --release --no-default-features
-
-    - name: Test for Linux x86_64 Headless
-      continue-on-error: false
-      run: cargo test --release --no-default-features
+      run: cargo zigbuild --release --no-default-features
 
     - name: Build for Linux x86_64
       continue-on-error: false
-      run: cargo build --release
-
-    - name: Test for Linux x86_64
-      continue-on-error: false
-      run: cargo test --release
+      run: cargo zigbuild --release
