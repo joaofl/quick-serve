@@ -1,5 +1,7 @@
 // #![allow(warnings)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+#![cfg_attr(not(feature = "ui"), allow(dead_code))]
+
 
 use log::debug;
 use log::{info, warn, LevelFilter};
@@ -30,8 +32,10 @@ use tokio::time::{sleep, Duration};
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Quick-Serve", long_about = "Instant file serving made easy")]
 struct Cli {
-    // If the UI gets compiled, give the option to run headless
-    #[cfg(feature = "ui")]
+    // Even with the GUI compiled, the headless arg remains
+    // to prevent breaking scripts if the GUI versions gets
+    // replaced by the headless. It has no effect on the actual 
+    // headless
     #[arg(
         help = "Headless",
         long, required = false,
@@ -100,21 +104,15 @@ async fn main() {
 
     let logger = Box::new(MyLogger::new(log_level));
     // Clone the producer, so that we can pass it to the consumer inside the UI
+    #[cfg(feature = "ui")]
     let logs = logger.logs.clone();
 
-    #[cfg(feature = "ui")]
-    // Define the channel used to exchange with the UI
+    // Define the channel used to control the servers
     let channel: DefaultChannel<CommandMsg> = Default::default();
 
     log::set_boxed_logger(logger).unwrap();
     log::set_max_level(LevelFilter::Trace); // Set the maximum log level
 
-    //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
-    // debug!("\n{:#?}\n", cli_args);
-
-    #[cfg(not(feature = "ui"))]
-    let headless = true;
 
     ////////////////////////////////////////////////////////////////////////
     // Spawn one thread per protocol and start waiting for command
@@ -178,10 +176,22 @@ async fn main() {
         info!("Press Ctrl+C to exit.");
     });
 
+
+    /////////////////////////////////////////////////////////////////////////
+    //
+    /////////////////////////////////////////////////////////////////////////
+    let headless;
+    #[cfg(feature = "ui")]{
+        headless = cli_args.headless;
+    }
+    #[cfg(not(feature = "ui"))]{
+        headless = true;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // HEADLESS related code from here on
     ////////////////////////////////////////////////////////////////////////
-    if cli_args.headless {
+    if headless {
         // Read and validate the bind address
         let bind_ip = cli_args.bind_ip;
         let path = cli_args.serve_dir;
@@ -191,7 +201,7 @@ async fn main() {
         let mut cmd = CommandMsg {
             start: true,
             bind_ip,
-            path: path,
+            path,
             ..Default::default()
         };
 
@@ -234,8 +244,8 @@ async fn main() {
     ////////////////////////////////////////////////////////////////////////
     // UI related code from here on
     ////////////////////////////////////////////////////////////////////////
-    // #[cfg(feature = "ui")]{
-    else {
+    #[cfg(feature = "ui")]{
+    if ! headless {
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
                 .with_inner_size([900.0, 800.0]),
@@ -259,6 +269,7 @@ async fn main() {
                 Box::new(ui)
             }),
         );
+    }
     }
 
     // futures::future::join_all(spawned_runners).await;
