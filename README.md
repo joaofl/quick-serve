@@ -3,11 +3,21 @@
 ![](https://tokei.rs/b1/github/joaofl/quick-serve?category=code)
 [![](https://deps.rs/repo/github/joaofl/quick-serve/status.svg)](https://deps.rs/repo/github/joaofl/quick-serve)
 
-![alt text](logo.png "Logo")
+<p align="center"> 
+  <p align="center"> <img src="media/logo.png" alt="Logo" width="600"/> </p>
+</p>
 
 # Quick-serve
 No setup, zero-config, multi-platform, multi-protocol, standalone server for developers or whoever wants to promptly 
 serve some files over the network.
+
+It can be used both headless or for an even more friendly experience, it can be used with a GUI:
+
+<!-- ![alt text](media/screenshot.png "Screenshot") -->
+
+<p align="center">
+  <img src="media/screenshot.png" alt="Screenshot" width="600"/>
+</p>
 
 ## Motivation
 
@@ -22,21 +32,6 @@ I developed this application as an exercise in learning Rust because I couldn't 
 multiple protocols, was headless, and supported various platforms. Unlike many dedicated servers tailored for either 
 Windows or Linux, with or without a UI, my app aims to bridge the gap by offering a versatile, multi-platform, and 
 protocol-agnostic solution.
-
-## Install and Run
-
-```sh
-cargo install quick-serve
-quick-serve -h
-```
-
-## Build and Run
-
-```sh
-git clone https://github.com/joaofl/quick-serve.git
-cd quick-serve
-cargo run --release -- -h
-```
 
 ## Usage
 
@@ -56,6 +51,53 @@ Options:
   -V, --version          Print version
 ```
 
+
+## Dependencies
+
+### Fedora
+```sh
+sudo dnf install glibc2-devel atk-devel cairo-devel pango-devel gdk-pixbuf2-devel gtk3-devel
+```
+
+### Ubuntu
+```sh
+sudo apt install libatk1.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libgtk-3-dev
+```
+
+## Install and Run
+
+```sh
+cargo install quick-serve
+quick-serve
+```
+
+## Build and Run
+
+```sh
+git clone https://github.com/joaofl/quick-serve.git
+cd quick-serve
+cargo run --release
+```
+
+The `ui` is optional and can be refrained from compilation with:
+
+```sh
+cargo build --release --no-default-features
+```
+
+Even if it is compiled, the UI can still be disabled at runtime.
+
+## Cross compile:
+
+```sh
+sudo dnf install mingw64-gcc
+cargo install cross
+
+./cross-build-all
+# or
+cross build --release
+```
+
 ## Implementation Goals
 
 ### Supported Protocols
@@ -70,17 +112,20 @@ Options:
 
 ### Interface
 - [x] Command line
-- [ ] Local interface
+- [x] Local interface
 - [ ] Web interface
+- [ ] Terminal interface
 
 ### Functionalities
 - [ ] Serve `n` files and exit
 - [ ] Serve for `t` seconds and exit
 - [ ] Show number of files being served
 - [ ] Report transfer rate
-- [ ] Report transfered files
-- [ ] Show statistics in the end
+- [ ] Report transferred files
+- [ ] Show statistics when exit
 - [ ] Color-code logs according to protocol
 - [ ] Add log filtering options
 - [ ] Refine on each protocol's specific logs
 
+## TODO
+- [x] Fix excessive CPU usage when using the UI

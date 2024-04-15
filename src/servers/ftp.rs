@@ -1,17 +1,20 @@
+use std::net::IpAddr;
 use std::path::PathBuf;
-use log::{debug};
+use std::str::FromStr;
+use log::{debug, info};
 use unftp_sbe_fs::ServerExt;
 use std::time::Duration;
 use super::Server;
 use async_trait::async_trait;
 use crate::servers::Protocol;
 use crate::utils::validation;
+use std::sync::Arc;
 
 
 #[async_trait]
 pub trait FTPRunner {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
-    async fn runner(&self);
+    fn runner(&self);
 }
 
 #[async_trait]
@@ -21,46 +24,54 @@ impl FTPRunner for Server {
 
         validation::validate_path(&path).expect("Invalid path");
         validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
-        s.path = path;
-        s.bind_address = bind_ip;
+
+        let path = validation::ensure_trailing_slash(&path);
+        s.path = Arc::new(path);
+        s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
         s.port = port;
 
         s.protocol = Protocol::Ftp;
-        return s;
+        FTPRunner::runner(&s);
+        s
     }
 
-    async fn runner(&self) {
-        // Get notified about the server's spawned task
+    fn runner(&self) {
         let mut receiver = self.sender.subscribe();
-        
-        loop {
-            let m = receiver.recv().await.unwrap();
-            let mut receiver2 = self.sender.subscribe();
 
-            if m.terminate { return };
-            if m.connect {
-                // Define new server
-                let server = 
-                libunftp::Server::with_fs(self.path.clone())
-                    .passive_ports(50000..65535)
-                    .metrics()
-                    .shutdown_indicator(async move {
-                        // let r2 = receiver_2.clone();
-                        loop {
-                            let m2 = receiver2.recv().await.unwrap();
-                            if m2.terminate { break }
-                            if m2.connect { continue } // Not for me. Go wait another msg
-                            else { break }
-                        }
-                        debug!("Gracefully terminating the FTP server");
-                        //Give 10 seconds to potential ongoing connections to finish, otherwise finish immediately
-                        libunftp::options::Shutdown::new().grace_period(Duration::from_secs(5))
-                    });
+        let bind_address = self.bind_address;
+        let port = self.port;
+        let path = self.path.to_string_lossy().to_string();
 
-                // Spin and await the actual server here
-                let _ = server.listen(format!("{}:{}", self.bind_address, self.port)).await;
+        tokio::spawn(async move {
+
+            loop {
+                debug!("FTP runner started... Waiting command to connect...");
+                let m = receiver.recv().await.unwrap();
+                debug!("Message received");
+
+                if m.connect {
+                    info!("Connecting...");
+                    // Define new server
+                    let _ = libunftp::Server::with_fs(path)
+                        .passive_ports(50000..65535)
+                        .metrics()
+                        .shutdown_indicator(async move {
+                            loop {
+                                info!("Connected. Waiting command to disconnect...");
+                                let _ = receiver.recv().await.unwrap();
+                                break;
+                            }
+                            debug!("Gracefully terminating the FTP server");
+                            // Give a few seconds to potential ongoing connections to finish, 
+                            // otherwise finish immediately
+                            libunftp::options::Shutdown::new().grace_period(Duration::from_secs(5))
+                        })
+                        .listen(format!("{}:{}", bind_address, port))
+                        .await.expect("Error starting the HTTP server...");
+                    break;
+                }
             }
-        }
+        });
     }
 }
 

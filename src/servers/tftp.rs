@@ -5,62 +5,67 @@ use async_trait::async_trait;
 
 // Create the TFTP server.
 use async_tftp::server::TftpServerBuilder;
-use std::path::PathBuf;
+use std::{net::IpAddr, ops::Deref, path::PathBuf, str::FromStr};
 use crate::utils::validation;
-use std::{sync::Arc};
+use std::sync::Arc;
+
 
 #[async_trait]
-pub trait TFTPServerRunner {
+pub trait TFTPRunner {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
-    async fn runner(self: Arc<Self>);
+    fn runner(&self);
 }
 
 #[async_trait]
-impl TFTPServerRunner for Server {
+impl TFTPRunner for Server {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
         let mut s = Server::default();
-
-        let path = validation::ensure_trailing_slash(&path);
+        
         validation::validate_path(&path).expect("Invalid path");
         validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
-        s.path = path;
-        s.bind_address = bind_ip;
+        
+        let path = validation::ensure_trailing_slash(&path);
+        s.path = Arc::new(path);
+        s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
         s.port = port;
 
         s.protocol = Protocol::Tftp;
-        return s;
+        TFTPRunner::runner(&s);
+        s
     }
-    async fn runner(self: Arc<Self>) {
-        // Get notified about the server's spawned task
+    fn runner(&self) {
         let mut receiver = self.sender.subscribe();
+        
+        let bind_address = self.bind_address.clone();
+        let port = self.port;
+        let path = self.path.clone();
 
-        loop {
-            let msg = receiver.recv().await.unwrap();
+        tokio::spawn(async move {
+            loop {
+                // Get notified about the server's spawned task
+                let m = receiver.recv().await.unwrap();
 
-            if msg.terminate { return };
-            if msg.connect {
-                let tsk = tokio::spawn({
-                    let me = Arc::clone(&self);
-                    async move {
-                        let addr = format!("{}:{}", me.bind_address, me.port);
-                        let tftpd =
-                            TftpServerBuilder::with_dir_ro(me.path.clone()).unwrap()
-                                .bind(addr.parse().unwrap())
-                                .build().await.unwrap();
+                if m.connect {
+                    info!("Connecting...");
+                    let tsk = tokio::spawn(async move {
+                            let addr = format!("{}:{}", bind_address, port);
+                            let tftpd =
+                                TftpServerBuilder::with_dir_ro(path.deref()).unwrap()
+                                    .bind(addr.parse().unwrap())
+                                    .build().await.unwrap();
 
-                        info!("Starting TFTP server...");
-                        let _ = tftpd.serve().await;
-                    }
-                });
+                            info!("Starting TFTP server...");
+                            let _ = tftpd.serve().await;
+                        }
+                    );
 
-                let msg = receiver.recv().await.unwrap();
-                if !msg.connect {
+                    let _ = receiver.recv().await.unwrap();
                     tsk.abort();
                     debug!("TFTP server stopped");
-                    if msg.terminate { return };
+                    break;
                 }
             }
-        }
+        });
     }
 }
 

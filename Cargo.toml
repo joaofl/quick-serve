@@ -2,7 +2,7 @@
 [package]
 authors =  ["João Loureiro"]
 name = "quick-serve"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/joaofl/quick-serve"
@@ -10,6 +10,9 @@ homepage = "https://github.com/joaofl/quick-serve"
 description = "Quick-serve: A zero-config, multi-platform, multi-protocol standalone server for a prompt file serving."
 categories = ["networking", "command-line-utilities", "development-tools"]
 
+[features]
+ui = ["dep:egui", "dep:eframe", "dep:rfd"]
+default = ["ui"]
 
 [dependencies]
 # TODO: Put only the used features
@@ -30,20 +33,25 @@ tower-http = { version = "0.4.4", features = ["full"] }
 tower = { version = "0.4.13", features = ["full"] }
 
 # Log related
-log = "0.4.21"
-env_logger = "0.11.3"
+log = "0.4.20"
+env_logger = "0.11.2"
 
 # For the headless version
-clap = { version = "4.5.4", features = ["derive"] }
+clap = { version = "4.5.4", features = ["derive", "string"] }
 ctrlc = "3.4.4"
 sha2 = "0.10.8"
+
+# For the gui version
+egui = {version = "0.27.2", optional = true}
+eframe = {version = "0.27.2", features = ["wayland"], optional = true}
+rfd = {version = "0.14.1", optional = true}
 
 [dev-dependencies]
 sha2 = "0.10.8"
 tempfile = "3.10.1"
 rand = "0.8.5"
 assert_cmd = "2.0.14"
-predicates = "3.0.4"
+predicates = "3.1.0"
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.

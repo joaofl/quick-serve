@@ -1,22 +1,47 @@
 // #![allow(warnings)]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+#![cfg_attr(not(feature = "ui"), allow(dead_code))]
 
-use log::{error, info, warn};
 
-use std::path::PathBuf;
-use std::ops::Deref;
-use std::sync::Arc;
+use log::debug;
+use log::{info, warn, LevelFilter};
+use std::process::exit;
 
 mod utils;
+use utils::logger::*;
+
 mod servers;
-use crate::servers::{*};
-use clap::{Parser};
+use crate::servers::*;
+
+mod common;
+use crate::common::*;
+
+use clap::Parser;
+use clap::ArgAction;
+
 extern crate ctrlc;
 extern crate core;
 
+use tokio::time::{sleep, Duration};
+
+#[cfg(feature = "ui")] mod ui;
+#[cfg(feature = "ui")] use crate::ui::window::*;
+#[cfg(feature = "ui")] use egui::{Style, Visuals};
+
+
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Quick-serve", long_about = "Instant file serving made easy")]
+#[command(author, version, about = "Quick-Serve", long_about = "Instant file serving made easy")]
 struct Cli {
-    
+    // Even with the GUI compiled, the headless arg remains
+    // to prevent breaking scripts if the GUI versions gets
+    // replaced by the headless. It has no effect on the actual 
+    // headless
+    #[arg(
+        help = "Headless",
+        long, required = false,
+        action = ArgAction::SetTrue,
+    )] headless: bool,
+
     #[arg(
         help = "Bind IP",
         short, long, required = false,
@@ -26,12 +51,12 @@ struct Cli {
     )] bind_ip: String,
     
     #[arg(
-        help = "Path to serve",
-        short = 'p', long, required = false,
+        help = "Directory to serve",
+        short = 'd', long, required = false,
         default_value = "/tmp/",
-        value_name = "DIR",
+        value_name = "PATH",
         require_equals = true,
-    )] serve_dir: PathBuf,
+    )] serve_dir: String,
 
     #[arg(
         help = "Verbose logging",
@@ -40,27 +65,27 @@ struct Cli {
     )] verbose: u8,
 
     #[arg(
-        default_missing_value = "8080",
-        help = "Start the HTTP server [default port: 8080]",
-        short = 'H', long, required = false, 
+        default_missing_value = Protocol::Http.get_default_port().to_string(),
+        help = format!("Start the HTTP server [default port: {}]", Protocol::Http.get_default_port().to_string()),
+        long, required = false, 
         num_args = 0..=1,
         require_equals = true,
         value_name = "PORT",
     )] http: Option<u32>,
 
     #[arg(
-        default_missing_value = "2121",
-        help = "Start the FTP server [default port: 2121]",
-        short, long, required = false, 
+        default_missing_value = Protocol::Ftp.get_default_port().to_string(),
+        help = format!("Start the FTP server [default port: {}]", Protocol::Ftp.get_default_port().to_string()),
+        long, required = false, 
         num_args = 0..=1,
         require_equals = true,
         value_name = "PORT",
     )] ftp: Option<u32>,
 
     #[arg(
-        default_missing_value = "6969",
-        help = "Start the TFTP server [default port: 6969]",
-        short, long, required = false, 
+        default_missing_value = Protocol::Tftp.get_default_port().to_string(),
+        help = format!("Start the TFTP server [default port: {}]", Protocol::Tftp.get_default_port().to_string()),
+        long, required = false, 
         num_args = 0..=1,
         require_equals = true,
         value_name = "PORT",
@@ -72,122 +97,190 @@ struct Cli {
 async fn main() {
     let cli_args = Cli::parse();
 
-    let mut log_level = "info";
+    let mut log_level = LevelFilter::Info;
     if cli_args.verbose > 0 {
-        log_level = "debug";
+        log_level = LevelFilter::Debug;
     }
 
-    ::std::env::set_var("RUST_LOG", log_level);
-    env_logger::builder()
-        .format_timestamp_secs()
-        .init();
+    let logger = Box::new(MyLogger::new(log_level));
+    // Clone the producer, so that we can pass it to the consumer inside the UI
+    #[cfg(feature = "ui")]
+    let logs = logger.logs.clone();
 
-    //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
-    // debug!("\n{:#?}\n", cli_args);
+    // Define the channel used to control the servers
+    let channel: DefaultChannel<CommandMsg> = Default::default();
 
-    let mut spawned_runners = vec![];
-    let mut spawned_servers = vec![];
-
-    // Read and validate the bind address
-    let bind_ip = cli_args.bind_ip;
-    let path = cli_args.serve_dir;
+    log::set_boxed_logger(logger).unwrap();
+    log::set_max_level(LevelFilter::Trace); // Set the maximum log level
 
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // 
-    // TFTP from here on
-    // 
-    // Spin the runners to wait for any potential server start
-    if cli_args.tftp.is_some() {
-        let port = cli_args.tftp.unwrap() as u16;
-        let tftp_server = Arc::new(<Server as TFTPServerRunner>::new(path.clone(), bind_ip.clone(), port));
-        let tftp_server_c = tftp_server.clone();
+    ////////////////////////////////////////////////////////////////////////
+    // Spawn one thread per protocol and start waiting for command
+    // to start or stop each server
+    ////////////////////////////////////////////////////////////////////////
+    for protocol in PROTOCOL_LIST {
+        let mut rcv = channel.sender.subscribe();
+        tokio::spawn(async move {
+            loop {
+                // debug!("Start waiting for messages");
+                // debug!("Done waiting for message... Checking it now");
+                let msg = rcv.recv().await.expect("Failed to receive message");
+                if msg.protocol != *protocol {
+                    debug!("\"not my business...\" said the {} thread", protocol.to_string());
+                    continue;
+                }
 
-        spawned_servers.push(tftp_server.clone());
-        spawned_runners.push(
-            tokio::spawn(async move {
-                TFTPServerRunner::runner(tftp_server).await
-            })
-        );
+                if msg.start == true {
+                    let server;
 
-        let _port = cli_args.tftp.unwrap() as u16;
-        let _ = tftp_server_c.start();
+                    match msg.protocol {
+                        Protocol::Http =>{
+                            server = <Server as HTTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
+                        },
+                        Protocol::Ftp =>{
+                            server = <Server as FTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
+                        },
+                        Protocol::Tftp =>{
+                            server = <Server as TFTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
+                        },
+                    } 
+
+                    // Wait the receiver to listen before the sender sends the 1rst msg
+                    // TODO: use some flag instead
+                    sleep(Duration::from_millis(100)).await;
+                    let _ = server.start();
+                    info!("Started server");
+                    
+                    // Once started, wait for termination
+                    let _msg = rcv.recv().await.unwrap();
+                    
+                    let _ = server.stop();
+                    info!("Server stopped");
+                }
+            }
+        });
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    // Ctrl+c handler from here on
+    ////////////////////////////////////////////////////////////////////////
+    // TODO: only add handle if any server has been invoked
+    // Add handle for Ctrl+C
+    tokio::spawn(async move {
+        ctrlc::set_handler(move || {
+            warn!("Ctrl+C received. Closing connections and exiting.");
+            //TODO: send a message to stop all servers and wait 10
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // 
-    // FTP from here on
-    // 
-    // Spin the runners to wait for any potential server start
-    if cli_args.ftp.is_some() {
-        let port = cli_args.ftp.unwrap() as u16;
-        let ftp_server = Arc::new(<Server as FTPRunner>::new(path.clone(), bind_ip.clone(), port));
-        let ftp_server_c = ftp_server.clone();
+            exit(1);
+        }).expect("Error setting Ctrl+C handler");
+        info!("Press Ctrl+C to exit.");
+    });
 
-        spawned_servers.push(ftp_server.clone());
-        spawned_runners.push(
-            tokio::spawn(async move {
-                FTPRunner::runner(ftp_server.deref()).await
-            })
-        );
 
-        spawned_runners.push(
-            tokio::spawn(async move {
-                let _ = ftp_server_c.start();
-            })
-        );
+    /////////////////////////////////////////////////////////////////////////
+    //
+    /////////////////////////////////////////////////////////////////////////
+    let headless;
+    #[cfg(feature = "ui")]{
+        headless = cli_args.headless;
+    }
+    #[cfg(not(feature = "ui"))]{
+        headless = true;
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    // HEADLESS related code from here on
+    ////////////////////////////////////////////////////////////////////////
+    if headless {
+        // Read and validate the bind address
+        let bind_ip = cli_args.bind_ip;
+        let path = cli_args.serve_dir;
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // 
-    // HTTP from here on
-    // 
-    // Spin the runners to wait for any potential server start
-    if cli_args.http.is_some() {
-        let port = cli_args.http.unwrap() as u16;
-        let server = Arc::new(<Server as HTTPRunner>::new(path.clone(), bind_ip.clone(), port));
-        let server_c = server.clone();
+        let mut count = 0u8;
 
-        spawned_servers.push(server.clone());
-        spawned_runners.push(
-            tokio::spawn(async move {
-                HTTPRunner::runner(server).await
-            })
-        );
-        spawned_runners.push(
-            tokio::spawn(async move {
-                let _ = server_c.start();
-            })
-        );
-    }
+        let mut cmd = CommandMsg {
+            start: true,
+            bind_ip,
+            path,
+            ..Default::default()
+        };
 
-    //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
-
-    if spawned_runners.iter().count() == 0 {
-        error!("No server(s) specified. Run with -h for more info...");
-        return;
-    }
-
-    // Set up a handler for Ctrl+C signal
-    ctrlc::set_handler(move || {
-        // Handle Ctrl+C signal here
-        warn!("Ctrl+C received. Closing connections and exiting.");
-        // Perform cleanup operations here before exiting
-        for server in &mut spawned_servers {
-            server.terminate();
+        // CHeck for each server invoked from the command line, and send 
+        // messages accordingly to start each
+        if cli_args.http.is_some() {
+            cmd.protocol = Protocol::Http;
+            cmd.port = cli_args.http.unwrap() as u16;
+            let _ = channel.sender.send(cmd.clone());
+            count += 1;
         }
 
-    }).expect("Error setting Ctrl+C handler");
-    info!("Press Ctrl+C to exit.");
+        if cli_args.ftp.is_some() {
+            cmd.protocol = Protocol::Ftp;
+            cmd.port = cli_args.ftp.unwrap() as u16;
+            let _ = channel.sender.send(cmd.clone());
+            count += 1;
+        }
 
-    futures::future::join_all(spawned_runners).await;
-    return;
+        if cli_args.tftp.is_some() {
+            cmd.protocol = Protocol::Tftp;
+            cmd.port = cli_args.tftp.unwrap() as u16;
+            let _ = channel.sender.send(cmd.clone());
+            count += 1;
+        }
+
+        if count == 0 {
+            println!("No server specified. Use -h for help");
+            exit(2);
+        }
+        else {
+            // TODO: make this a feature: run for N seconds and exit
+            // TODO: get some periodic stats as well
+            loop {
+                sleep(Duration::from_secs(60)).await;
+            }
+
+        }
+    }
+    ////////////////////////////////////////////////////////////////////////
+    // UI related code from here on
+    ////////////////////////////////////////////////////////////////////////
+    #[cfg(feature = "ui")]{
+    if ! headless {
+        let options = eframe::NativeOptions {
+            viewport: egui::ViewportBuilder::default()
+                .with_inner_size([900.0, 800.0]),
+                ..Default::default()
+        };
+
+        let _ = eframe::run_native(
+            "Quick-Serve",
+            options,
+            Box::new(|cc| {
+                let style = Style {
+                    visuals: Visuals::light(),
+                    ..Style::default()
+                };
+                cc.egui_ctx.set_style(style);
+
+                let mut ui = UI::new(cc);
+                ui.logs = logs;
+
+                ui.channel.sender = channel.sender;
+                Box::new(ui)
+            }),
+        );
+    }
+    }
+
+    // futures::future::join_all(spawned_runners).await;
+    exit(0);
 }
 
+
+
+////////////////////////////////////////////////////////////////////////
+// TESTS
+////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
     use predicates::prelude::*;
