@@ -20,20 +20,21 @@ mkdir assets 2>/dev/null || true
 for target in "${TARGETS[@]}"; do
         rustup target add $target
 
-        echo "Cross-compiling the headless version for $target..."
-        cargo zigbuild --release --target "$target"  --no-default-features --jobs $(nproc)
-
         echo "Cross-compiling gui version for $target..."
         cargo zigbuild --release --target "$target" --jobs $(nproc)
 
-        echo "Copying $target assets"
+        echo "Cross-compiling the headless version for $target..."
+        cargo zigbuild --release --target "$target"  --no-default-features --jobs $(nproc)
+done
 
+for target in "${TARGETS[@]}"; do
         if [ $target = "x86_64-pc-windows-gnu" ]; then
             ext=".exe"
         else
             ext=""
         fi
 
+        echo "Copying $target assets"
         cp -v target/${target}/release/quick-serve${ext}           assets/quick-serve-${target}${ext}          2>/dev/null
         cp -v target/${target}/release/quick-serve-headless${ext}  assets/quick-serve-headless-${target}${ext} 2>/dev/null
 done
