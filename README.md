@@ -90,12 +90,17 @@ Even if it is compiled, the UI can still be disabled at runtime.
 ## Cross compile:
 
 ```sh
-sudo dnf install mingw64-gcc
-cargo install cross
+cargo install cargo-zigbuild
+pip3 install zigbuild
+./cross-build-all.sh
+```
 
-./cross-build-all
-# or
-cross build --release
+## Test
+
+```sh
+sudo apt install wget tftp
+cargo build
+cargo test
 ```
 
 ## Implementation Goals
