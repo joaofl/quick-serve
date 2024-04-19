@@ -14,6 +14,15 @@ categories = ["networking", "command-line-utilities", "development-tools"]
 ui = ["dep:egui", "dep:eframe", "dep:rfd"]
 default = ["ui"]
 
+[[bin]]
+name = "quick-serve-gui"
+path = "src/main.rs"
+required-features = ["ui"]
+
+[[bin]]
+name = "quick-serve"
+path = "src/main.rs"
+
 [dependencies]
 # TODO: Put only the used features
 tokio = { version = "1.37.0", features = ["full"]}

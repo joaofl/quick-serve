@@ -28,15 +28,14 @@ for target in "${TARGETS[@]}"; do
 done
 
 for target in "${TARGETS[@]}"; do
+        ext=""
         if [ $target = "x86_64-pc-windows-gnu" ]; then
             ext=".exe"
-        else
-            ext=""
         fi
 
         echo "Copying $target assets"
-        cp -v target/${target}/release/quick-serve${ext}           assets/quick-serve-${target}${ext}          2>/dev/null
-        cp -v target/${target}/release/quick-serve-headless${ext}  assets/quick-serve-headless-${target}${ext} 2>/dev/null
+        cp -v target/${target}/release/quick-serve-gui${ext}    assets/quick-serve-gui-${target}${ext}
+        cp -v target/${target}/release/quick-serve${ext}        assets/quick-serve${target}${ext}
 done
 
 # echo "Cleaning up..."
