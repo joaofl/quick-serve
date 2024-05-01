@@ -2,7 +2,8 @@ use log::info;
 use tokio::sync::broadcast;
 use std::str::FromStr;
 use std::{path::PathBuf, sync::Arc};
-use std::net::{IpAddr};
+use std::net::IpAddr;
+use crate::utils::validation;
 
 
 #[derive(Debug, Default, PartialEq, Clone)]
@@ -58,6 +59,20 @@ impl Default for Server {
 }
 
 impl Server {
+    fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
+        let mut s = Server::default();
+
+        validation::validate_path(&path).expect("Invalid path");
+        validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
+
+        s.path = Arc::new(path);
+        s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
+        s.port = port;
+
+        s
+    }
+
+
     pub fn start(&self) -> Result<(), String> {
         info!("Starting {} server bind to {}:{}", self.protocol.to_string(), self.bind_address, self.port);
         info!("Serving {}", self.path.to_string_lossy());

@@ -21,15 +21,7 @@ pub trait HTTPRunner {
 #[async_trait]
 impl HTTPRunner for Server {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
-        let mut s = Server::default();
-
-        validation::validate_path(&path).expect("Invalid path");
-        validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
-
-        s.path = Arc::new(path);
-        s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
-        s.port = port;
-
+        let mut s = Server::new(path, bind_ip, port);
         s.protocol = Protocol::Http;
         HTTPRunner::runner(&s);
         s
