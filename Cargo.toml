@@ -2,12 +2,12 @@
 [package]
 authors =  ["João Loureiro"]
 name = "quick-serve"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/joaofl/quick-serve"
 homepage = "https://github.com/joaofl/quick-serve"
-description = "Quick-serve: A zero-config, multi-platform, multi-protocol standalone server for a prompt file serving."
+description = "Quick Serve: A zero-config, multi-platform, multi-protocol standalone server for prompt file serving, with or without GUI."
 categories = ["networking", "command-line-utilities", "development-tools"]
 
 [features]
@@ -30,7 +30,7 @@ futures = "0.3.30"
 async-trait = "0.1.80"
 
 # FTP server deps
-libunftp = "0.19.1"
+libunftp = "0.20.1"
 unftp-sbe-fs = "0.2.4"
 
 # TFTP server
@@ -51,8 +51,8 @@ ctrlc = "3.4.4"
 sha2 = "0.10.8"
 
 # For the gui version
-egui = {version = "0.27.2", optional = true}
-eframe = {version = "0.27.2", features = ["wayland"], optional = true}
+egui = {version = "0.28.0", optional = true}
+eframe = {version = "0.28.0", features = ["wayland"], optional = true}
 rfd = {version = "0.14.1", optional = true}
 
 [dev-dependencies]

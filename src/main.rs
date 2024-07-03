@@ -266,7 +266,7 @@ async fn main() {
                 ui.logs = logs;
 
                 ui.channel.sender = channel.sender;
-                Box::new(ui)
+                Ok(Box::new(ui))
             }),
         );
     }

@@ -66,6 +66,8 @@ impl FTPRunner for Server {
                             // otherwise finish immediately
                             libunftp::options::Shutdown::new().grace_period(Duration::from_secs(5))
                         })
+                        .build()
+                        .unwrap()
                         .listen(format!("{}:{}", bind_address, port))
                         .await.expect("Error starting the HTTP server...");
                     break;
