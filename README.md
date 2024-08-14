@@ -89,9 +89,14 @@ Even if it is compiled, the UI can still be disabled at runtime.
 
 ## Cross compile:
 
+- Install Docker
+- Install Cross
+```bash
+cargo install cross --git https://github.com/cross-rs/cross
+```
+
+- Build
 ```sh
-cargo install cargo-zigbuild
-pip3 install zigbuild
 ./cross-build-all.sh
 ```
 

@@ -24,6 +24,9 @@ name = "quick-serve"
 path = "src/main.rs"
 
 [dependencies]
+# For cross-compiling for windows
+aws-lc-rs = { version = "1", features = ["bindgen"] }
+
 # TODO: Put only the used features
 tokio = { version = "1.37.0", features = ["full"]}
 futures = "0.3.30"
