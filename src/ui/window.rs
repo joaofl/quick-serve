@@ -99,7 +99,7 @@ impl eframe::App for UI {
                 for p in self.protocols.iter_mut() {
                     ui.group(|ui| {
                         ui.add(Label::new(format!("{}", p.protocol.to_string())));
-                        ui.add(DragValue::new(&mut p.port).clamp_range(1..=50000));
+                        ui.add(DragValue::new(&mut p.port).range(1..=50000));
 
                         if ui.add(toggle(&mut p.start)).clicked() {
 
