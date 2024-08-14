@@ -11,10 +11,8 @@ armv7-unknown-linux-gnueabihf   \
 arm-unknown-linux-gnueabihf     \
 )
 
-# cargo install cargo-zigbuild
-pip3 install ziglang
-rm -rf assets
-mkdir assets 2>/dev/null || true
+rm -rf target/assets
+mkdir -p target/assets 2>/dev/null || true
 
 # Cross-compile for each target platform
 for target in "${TARGETS[@]}"; do
@@ -25,16 +23,17 @@ for target in "${TARGETS[@]}"; do
 
         # rustup target add $target
 
+        echo; echo "########################################################################################"; echo
         echo "Cross-compiling gui version for $target..."
         # cargo zigbuild --release --target "$target" --jobs $(nproc) --bin quick-serve
         cross build --release --target "$target" --jobs $(nproc) --bin quick-serve
-        cp -vf target/${target}/release/quick-serve${ext}     assets/quick-serve-gui-${target}${ext} || true
+        cp -vf target/${target}/release/quick-serve${ext}     target/assets/quick-serve-gui-${target}${ext} || true
 
+        echo; echo "########################################################################################"; echo
         echo "Cross-compiling the headless version for $target..."
         # cargo zigbuild --release --target "$target"  --no-default-features --jobs $(nproc)
         cross build --release --target "$target" --no-default-features --jobs $(nproc) --bin quick-serve
-        cp -vf target/${target}/release/quick-serve${ext}  assets/quick-serve-${target}${ext} || true
+        cp -vf target/${target}/release/quick-serve${ext}  target/assets/quick-serve-${target}${ext} || true
 done
 
-# echo "Cleaning up..."
-# cargo clean
+exit 0
