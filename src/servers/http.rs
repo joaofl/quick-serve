@@ -1,16 +1,47 @@
-// use egui::epaint::tessellator::path;
 use log::{debug, info};
 
-use tower_http::services::ServeDir;
+use async_trait::async_trait;
+use bytes::Bytes;
+use crate::servers::Protocol;
+use crate::utils::validation;
+use http_body_util::Full;
+
+use hyper_util::rt::TokioIo;
+use hyper::{Request, Response};
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+
 use std::net::{IpAddr, SocketAddr};
-use std::ops::Deref;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
-use crate::servers::Protocol;
-use async_trait::async_trait;
-use crate::utils::validation;
+
 use super::Server;
+use tokio::net::TcpListener;
+
+
+async fn receive_request(req: Request<hyper::body::Incoming>, base_path: Arc<PathBuf>) -> Result<Response<Full<Bytes>>, hyper::Error> {
+
+    // Remove the trailing slash from the path to avoid 
+    // Path treating it as absolute path and ignoring the base path
+    let req_path = req.uri().path().strip_prefix('/').unwrap_or(req.uri().path());
+
+    let file_path = base_path.join(req_path);
+
+    info!("Request path: {}", file_path.display());
+
+    if !file_path.exists() {
+        info!("File does not exist: {}", file_path.display());
+        return Ok(Response::builder()
+            .status(404)
+            .body(Full::new(Bytes::from("File not found")))
+            .unwrap());
+    }
+
+    let file_content = tokio::fs::read(file_path).await.unwrap();
+    Ok(Response::new(Full::new(Bytes::from(file_content))))
+}
+
 
 #[async_trait]
 pub trait HTTPRunner {
@@ -26,7 +57,7 @@ impl HTTPRunner for Server {
         validation::validate_path(&path).expect("Invalid path");
         validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
 
-        s.path = Arc::new(path);
+        s.path = Arc::new(path.clone()); // Make a clone of the path and store it in the Server struct
         s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
         s.port = port;
 
@@ -51,19 +82,29 @@ impl HTTPRunner for Server {
                 if m.connect {
                     info!("Connecting...");
                     // Create a SocketAddr from the IpAddr and port
-                    let socket_addr = SocketAddr::new(bind_address, port);
-                    let service = ServeDir::new(path.deref());
-                    let _ = hyper::server::Server::bind(&socket_addr)
-                        .serve(tower::make::Shared::new(service))
-                        .with_graceful_shutdown(async {
-                            loop {
-                                info!("Connected. Waiting command to disconnect...");
-                                let _m = receiver.recv().await.unwrap();
-                                break;
+
+                    let tsk = tokio::spawn(async move {
+                        let socket_addr = SocketAddr::new(bind_address, port);
+                        let listener = TcpListener::bind(socket_addr).await.unwrap();
+
+                        loop {
+                            let (stream, _) = listener.accept().await.unwrap();
+                            let io = TokioIo::new(stream);
+                            let path_clone = path.clone();
+
+                            info!("Serving...");
+                            if let Err(err) = http1::Builder::new()
+                                .serve_connection(io, service_fn(move |req| receive_request(req, path_clone.clone())))
+                                .await
+                            {
+                                println!("Error serving connection: {:?}", err);
                             }
-                            info!("Gracefully terminated the HTTP server");
-                        })
-                        .await.expect("Error starting the HTTP server...");
+                        }
+                    });
+
+                    let _ = receiver.recv().await.unwrap();
+                    tsk.abort();
+                    debug!("HTTP server stopped");
                     break;
                 }
             }
