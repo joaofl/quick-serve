@@ -8,7 +8,7 @@ license = "MIT"
 repository = "https://github.com/joaofl/quick-serve"
 homepage = "https://github.com/joaofl/quick-serve"
 description = "Quick Serve: A zero-config, multi-platform, multi-protocol standalone server for prompt file serving, with or without GUI."
-categories = ["networking", "command-line-utilities", "development-tools"]
+categories = ["command-line-utilities", "development-tools"]
 
 [features]
 ui = ["dep:egui", "dep:eframe", "dep:rfd"]
