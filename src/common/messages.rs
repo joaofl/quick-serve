@@ -1,3 +1,7 @@
+// Disable warning since `receiver` is not used in this file, 
+// while its a placeholder for the future with too much impact to remove
+#![allow(dead_code)]
+
 use crate::servers::server::Protocol;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 

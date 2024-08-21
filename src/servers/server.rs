@@ -1,8 +1,13 @@
-use log::info;
+use log::{debug, info};
 use tokio::sync::broadcast;
+use tokio::time::sleep;
+use std::process::exit;
 use std::str::FromStr;
+use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
-use std::net::{IpAddr};
+use std::net::IpAddr;
+
+use crate::{Cli, CommandMsg, DefaultChannel, FTPRunner, HTTPRunner, TFTPRunner};
 
 
 #[derive(Debug, Default, PartialEq, Clone)]
@@ -82,3 +87,104 @@ impl Server {
     }
 }
 
+
+
+pub fn server_starter_receiver(channel: &DefaultChannel<CommandMsg>) {
+    ////////////////////////////////////////////////////////////////////////
+    // Spawn one thread per protocol and start waiting for command
+    // to start or stop each server
+    ////////////////////////////////////////////////////////////////////////
+    for protocol in PROTOCOL_LIST {
+        let mut rcv = channel.sender.subscribe();
+        debug!("Spawning receiver for {}", protocol.to_string());
+        tokio::spawn(async move {
+            loop {
+                debug!(" {} started waiting for messages", protocol.to_string());
+                let msg = rcv.recv().await.expect("Failed to receive message");
+                if msg.protocol != *protocol {
+                    debug!("\"Not my business...\" said the {}", protocol.to_string());
+                    continue;
+                }
+
+                if msg.start == true {
+                    let server;
+
+                    match msg.protocol {
+                        Protocol::Http =>{
+                            server = <Server as HTTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
+                        },
+                        Protocol::Ftp =>{
+                            server = <Server as FTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
+                        },
+                        Protocol::Tftp =>{
+                            server = <Server as TFTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
+                        },
+                    }
+
+                    // Wait the receiver to listen before the sender sends the 1rst msg
+                    // TODO: use some flag instead
+                    sleep(Duration::from_millis(100)).await;
+                    let _ = server.start();
+                    info!("Started server");
+
+                    // Once started, wait for termination
+                    let _msg = rcv.recv().await.unwrap();
+
+                    let _ = server.stop();
+                    info!("Server stopped");
+                }
+            }
+        });
+    }
+}
+
+
+pub fn server_starter_sender(cli_args: &Cli, channel: &DefaultChannel<CommandMsg>) {
+    // Read and validate the bind address
+    let bind_ip = &cli_args.bind_ip;
+    let path = &cli_args.serve_dir;
+
+    let mut count = 0u8;
+
+    let mut cmd = CommandMsg {
+        start: true,
+        bind_ip: bind_ip.to_string(),
+        path: path.to_string(),
+        ..Default::default()
+    };
+
+    // Check for each server invoked from the command line, and send 
+    // messages accordingly to start each
+    if cli_args.http.is_some() {
+        cmd.protocol = Protocol::Http;
+        cmd.port = cli_args.http.unwrap() as u16;
+        let _ = channel.sender.send(cmd.clone());
+        count += 1;
+    }
+
+    if cli_args.ftp.is_some() {
+        cmd.protocol = Protocol::Ftp;
+        cmd.port = cli_args.ftp.unwrap() as u16;
+        let _ = channel.sender.send(cmd.clone());
+        count += 1;
+    }
+
+    if cli_args.tftp.is_some() {
+        cmd.protocol = Protocol::Tftp;
+        cmd.port = cli_args.tftp.unwrap() as u16;
+        let _ = channel.sender.send(cmd.clone());
+        count += 1;
+    }
+
+    if count == 0 {
+        println!("No server specified. Use -h for help");
+        exit(2);
+    }
+    else {
+        // TODO: make this a feature: run for N seconds and exit
+        // TODO: get some periodic stats as well
+        loop {
+            std::thread::sleep(Duration::from_secs(60));
+        }
+    }
+}

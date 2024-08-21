@@ -16,12 +16,12 @@ default = ["ui"]
 
 [[bin]]
 name = "quick-serve-gui"
-path = "src/main.rs"
+path = "src/main_gui.rs"
 required-features = ["ui"]
 
 [[bin]]
 name = "quick-serve"
-path = "src/main.rs"
+path = "src/main_cli.rs"
 
 [dependencies]
 # For cross-compiling for windows
