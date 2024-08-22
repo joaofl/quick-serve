@@ -86,6 +86,12 @@ pub mod tests {
         assert!(out_server.is_err(), "Server exited gracefully while it should have not: {:?}", out_server);
 
         let file_in = dir_path_c.join(file_in);
+        assert!(file_in.exists(), "File {} does not exist!", file_in.to_str().unwrap());
+
+        let file_out = PathBuf::from(file_out);
+        assert!(file_out.exists(), "File {} does not exist!", file_out.to_string_lossy());
+        assert!(file_out.metadata().unwrap().len() > 0, "File {} is empty!", file_out.to_string_lossy());
+
         let r = compare_files(&file_in, &PathBuf::from(file_out)).unwrap();
 
         assert!(r, "Content of files served and downloaded are not the same!");

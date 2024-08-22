@@ -92,7 +92,7 @@ mod tests {
         let port = 2223u16;
         let file_in = "data.bin";
         let file_out = "/tmp/data-out-ftp.bin";
-        let dl_cmd = format!("wget -t2 -T1 {}://127.0.0.1:{}/{} -O {}", proto.to_string(), port, file_in, file_out);
+        let dl_cmd = format!("curl  --retry 2 --retry-delay 1 {}://127.0.0.1:{}/{} -o {}", proto.to_string(), port, file_in, file_out);
 
         test_server_e2e(proto, port, dl_cmd, file_in, file_out);
 
