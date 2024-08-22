@@ -22,6 +22,9 @@ for target in "${TARGETS[@]}"; do
     cross build --release --target "$target"
 done
 
+# Test natively
+cross test --release
+
 # Copy the compiled files
 for target in "${TARGETS[@]}"; do
     ext=""
@@ -29,8 +32,8 @@ for target in "${TARGETS[@]}"; do
         ext=".exe"
     fi
 
-    cp -vf target/${target}/release/quick-serve-gui${ext}     target/assets/quick-serve-gui-${target}${ext} || true
-    cp -vf target/${target}/release/quick-serve${ext}  target/assets/quick-serve-${target}${ext} || true
+    cp -vf target/${target}/release/quick-serve-gui${ext}   target/assets/quick-serve-gui-${target}${ext} || true
+    cp -vf target/${target}/release/quick-serve${ext}       target/assets/quick-serve-${target}${ext} || true
 done
 
 exit 0

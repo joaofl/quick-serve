@@ -1,5 +1,5 @@
 [build]
 default-target = "x86_64-unknown-linux-gnu"    # use this target if none is explicitly provided
 pre-build = [                                  # additional commands to run prior to building the package
-    "apt-get update && apt-get --assume-yes install nasm build-essential clang wget tftp curl"
+    "apt-get update && apt-get --assume-yes install nasm build-essential clang wget tftp-hpa curl"
 ]
