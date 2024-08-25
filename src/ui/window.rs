@@ -1,9 +1,7 @@
-// use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use eframe::egui;
 use egui::{DragValue, TextEdit};
 use egui::{Label, TextStyle};
-// use log::info;
 use crate::ui::toggle_switch::toggle;
 use crate::servers::server::Protocol;
 use crate::DefaultChannel;
@@ -34,6 +32,7 @@ impl UI {
         s.protocols.push(CommandMsg::new(&Protocol::Http));
         s.protocols.push(CommandMsg::new(&Protocol::Ftp));
         s.protocols.push(CommandMsg::new(&Protocol::Tftp));
+        s.protocols.push(CommandMsg::new(&Protocol::Dhcp));
         s
     }
 }
@@ -56,9 +55,11 @@ impl eframe::App for UI {
 
                     egui::widgets::global_dark_light_mode_switch(ui);
 
+                    ui.separator();
                     if ui.button("Exit").clicked() {
                         std::process::exit(0);
                     };
+                    ui.separator();
             });
 
             // #######################################################################
@@ -99,7 +100,10 @@ impl eframe::App for UI {
                 for p in self.protocols.iter_mut() {
                     ui.group(|ui| {
                         ui.add(Label::new(format!("{}", p.protocol.to_string())));
-                        ui.add(DragValue::new(&mut p.port).range(1..=50000));
+                        
+                        if p.protocol != Protocol::Dhcp {
+                            ui.add(DragValue::new(&mut p.port).range(1..=50000));
+                        }
 
                         if ui.add(toggle(&mut p.start)).clicked() {
 

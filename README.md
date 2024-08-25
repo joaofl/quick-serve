@@ -41,14 +41,16 @@ Quick-serve
 Usage: quick-serve [OPTIONS]
 
 Options:
-  -b, --bind-ip=<IP>     Bind IP [default: 127.0.0.1]
-  -p, --serve-dir=<DIR>  Path to serve [default: /tmp/]
-  -v, --verbose...       Verbose logging
-  -H, --http[=<PORT>]    Start the HTTP server [default port: 8080]
-  -f, --ftp[=<PORT>]     Start the FTP server [default port: 2121]
-  -t, --tftp[=<PORT>]    Start the TFTP server [default port: 6969]
-  -h, --help             Print help (see more with '--help')
-  -V, --version          Print version
+      --headless          Headless
+  -b, --bind-ip=<IP>      Bind IP [default: 127.0.0.1]
+  -d, --serve-dir=<PATH>  Directory to serve [default: /tmp/]
+  -v, --verbose...        Verbose logging
+  --http[=<PORT>]     Start the HTTP server [default port: 8080]
+  --ftp[=<PORT>]      Start the FTP server [default port: 2121]
+  --tftp[=<PORT>]     Start the TFTP server [default port: 6969]
+  --dhcp              Start the DHCP server
+  -h, --help              Print help (see more with '--help')
+  -V, --version           Print version
 ```
 
 
@@ -115,7 +117,7 @@ cargo test
 - [x] HTTP
 - [x] TFTP
 - [ ] HTTPS
-- [ ] DHCP
+- [x] DHCP
 - [ ] SFTP
 - [ ] NFS
 - [ ] SAMBA
