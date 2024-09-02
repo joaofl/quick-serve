@@ -28,7 +28,7 @@ path = "src/main_cli.rs"
 aws-lc-rs = { version = "1.8.1", features = ["bindgen"] }
 
 # TODO: Put only the used features
-tokio = { version = "1.39.3", features = ["full"]}
+tokio = { version = "1.40.0", features = ["full"]}
 futures = "0.3.30"
 async-trait = "0.1.81"
 
