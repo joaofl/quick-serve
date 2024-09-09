@@ -30,7 +30,7 @@ aws-lc-rs = { version = "1.9.0", features = ["bindgen"] }
 # TODO: Put only the used features
 tokio = { version = "1.40.0", features = ["full"]}
 futures = "0.3.30"
-async-trait = "0.1.81"
+async-trait = "0.1.82"
 
 # FTP server deps
 libunftp = "0.20.1"
