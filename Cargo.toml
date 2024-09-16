@@ -42,7 +42,7 @@ async-tftp = "0.3.6"
 # HTTP server deps: TODO: check whats needed
 hyper = { version = "1.4.1", features = ["full"] }
 http-body-util = "0.1.2"
-hyper-util = { version = "0.1.7", features = ["full"] }
+hyper-util = { version = "0.1.8", features = ["full"] }
 bytes = "1.7.1"
 
 # Log related
