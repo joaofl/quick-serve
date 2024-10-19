@@ -1,12 +1,9 @@
-// use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use eframe::egui;
 use egui::{DragValue, TextEdit};
 use egui::{Label, TextStyle};
-// use log::info;
 use crate::ui::toggle_switch::toggle;
-use crate::servers::server::Protocol;
-use crate::DefaultChannel;
+use crate::{DefaultChannel, PROTOCOL_LIST};
 
 use crate::messages::CommandMsg;
 
@@ -30,10 +27,9 @@ impl UI {
             path: "/tmp/".into(),
             ..Default::default()
         };
-
-        s.protocols.push(CommandMsg::new(&Protocol::Http));
-        s.protocols.push(CommandMsg::new(&Protocol::Ftp));
-        s.protocols.push(CommandMsg::new(&Protocol::Tftp));
+        for protocol in PROTOCOL_LIST {
+            s.protocols.push(CommandMsg::new(protocol));
+        }
         s
     }
 }
@@ -54,7 +50,7 @@ impl eframe::App for UI {
                         ui.selectable_value(&mut self.aspect_ratio, 1.0, "S");
                     });
 
-                    egui::widgets::global_dark_light_mode_switch(ui);
+                    egui::widgets::global_theme_preference_switch(ui);
 
                     if ui.button("Exit").clicked() {
                         std::process::exit(0);
