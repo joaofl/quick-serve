@@ -56,12 +56,12 @@ Options:
 
 ### Fedora
 ```sh
-sudo dnf install glibc2-devel atk-devel cairo-devel pango-devel gdk-pixbuf2-devel gtk3-devel
+sudo dnf install glibc2-devel atk-devel cairo-devel pango-devel gdk-pixbuf2-devel gtk3-devel gcc cmake clang clang-libs
 ```
 
 ### Ubuntu
 ```sh
-sudo apt install libatk1.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libgtk-3-dev
+sudo apt install libatk1.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libgtk-3-dev build-essential
 ```
 
 ## Install and Run

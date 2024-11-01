@@ -25,10 +25,10 @@ path = "src/main_cli.rs"
 
 [dependencies]
 # For cross-compiling for windows
-aws-lc-rs = { version = "1.9.0", features = ["bindgen"] }
+aws-lc-rs = { version = "1.10.0", features = ["bindgen"] }
 
 # TODO: Put only the used features
-tokio = { version = "1.40.0", features = ["full"]}
+tokio = { version = "1.41.0", features = ["full"]}
 async-trait = "0.1.83"
 
 # FTP server deps
@@ -41,8 +41,8 @@ async-tftp = "0.3.6"
 # HTTP server deps: TODO: check whats needed
 hyper = { version = "1.5.0", features = ["full"] }
 http-body-util = "0.1.2"
-hyper-util = { version = "0.1.9", features = ["full"] }
-bytes = "1.7.2"
+hyper-util = { version = "0.1.10", features = ["full"] }
+bytes = "1.8.0"
 
 # Log related
 log = "0.4.22"
