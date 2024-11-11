@@ -28,7 +28,7 @@ path = "src/main_cli.rs"
 aws-lc-rs = { version = "1.10.0", features = ["bindgen"] }
 
 # TODO: Put only the used features
-tokio = { version = "1.41.0", features = ["full"]}
+tokio = { version = "1.41.1", features = ["full"]}
 async-trait = "0.1.83"
 
 # FTP server deps
