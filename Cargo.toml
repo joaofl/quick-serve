@@ -25,7 +25,7 @@ path = "src/main_cli.rs"
 
 [dependencies]
 # For cross-compiling for windows
-aws-lc-rs = { version = "1.11.0", features = ["bindgen"] }
+aws-lc-rs = { version = "1.11.1", features = ["bindgen"] }
 
 # TODO: Put only the used features
 tokio = { version = "1.41.1", features = ["full"]}
