@@ -52,7 +52,7 @@ Options:
 ```
 
 
-## Dependencies
+## Build Dependencies
 
 ### Fedora
 ```sh
@@ -64,14 +64,14 @@ sudo dnf install glibc2-devel atk-devel cairo-devel pango-devel gdk-pixbuf2-deve
 sudo apt install libatk1.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libgtk-3-dev build-essential
 ```
 
-## Install and Run
+## Install latest and run
 
 ```sh
 cargo install quick-serve
 quick-serve
 ```
 
-## Build and Run
+## Build and run from source
 
 ```sh
 git clone https://github.com/joaofl/quick-serve.git
@@ -87,7 +87,7 @@ cargo build --release --no-default-features
 
 Even if it is compiled, the UI can still be disabled at runtime.
 
-## Cross compile:
+## Using cross:
 
 - Install Docker
 - Install Cross
@@ -135,7 +135,7 @@ cargo test
 - [ ] Show statistics when exit
 - [ ] Color-code logs according to protocol
 - [ ] Add log filtering options
-- [ ] Refine on each protocol's specific logs
 
 ## TODO
 - [x] Fix excessive CPU usage when using the UI
+- [ ] Refine on each protocol's specific logs
