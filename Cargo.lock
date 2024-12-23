@@ -3304,7 +3304,7 @@ dependencies = [
 
 [[package]]
 name = "quick-serve"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "assert_cmd",
  "async-tftp",
