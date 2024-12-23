@@ -44,6 +44,7 @@ impl eframe::App for UI {
             egui::menu::bar(ui, |ui| {
                 egui::ComboBox::from_label("")
                     .selected_text("Size")
+                    .width(20.0)
                     .show_ui(ui, |ui| {
                         ui.selectable_value(&mut self.aspect_ratio, 2.0, "L");
                         ui.selectable_value(&mut self.aspect_ratio, 1.5, "M");

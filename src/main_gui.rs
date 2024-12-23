@@ -22,7 +22,6 @@ extern crate core;
 
 mod ui;
 use crate::ui::window::*;
-use egui::{Style, Visuals};
 
 
 #[tokio::main]
@@ -72,11 +71,7 @@ async fn main() {
             "Quick-Serve",
             options,
             Box::new(|cc| {
-                let style = Style {
-                    visuals: Visuals::light(),
-                    ..Style::default()
-                };
-                cc.egui_ctx.set_style(style);
+                cc.egui_ctx.set_theme(egui::Theme::Light);
 
                 let mut ui = UI::new(cc);
                 ui.logs = logs;
