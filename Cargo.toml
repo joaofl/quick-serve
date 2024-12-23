@@ -32,7 +32,7 @@ tokio = { version = "1.42.0", features = ["full"]}
 async-trait = "0.1.83"
 
 # FTP server deps
-libunftp = "0.20.1"
+libunftp = "0.20.3"
 unftp-sbe-fs = "0.2.5"
 
 # TFTP server
