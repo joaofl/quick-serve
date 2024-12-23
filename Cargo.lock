@@ -636,31 +636,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
-name = "aws-lc-fips-sys"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59057b878509d88952425fe694a2806e468612bde2d71943f3cd8034935b5032"
-dependencies = [
- "bindgen",
- "cc",
- "cmake",
- "dunce",
- "fs_extra",
- "libc",
- "paste",
- "regex",
-]
-
-[[package]]
 name = "aws-lc-rs"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f409eb70b561706bf8abba8ca9c112729c481595893fd06a2dd9af8ed8441148"
 dependencies = [
- "aws-lc-fips-sys",
  "aws-lc-sys",
  "paste",
- "untrusted 0.7.1",
  "zeroize",
 ]
 
@@ -3322,12 +3304,11 @@ dependencies = [
 
 [[package]]
 name = "quick-serve"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "assert_cmd",
  "async-tftp",
  "async-trait",
- "aws-lc-rs",
  "bytes",
  "clap",
  "ctrlc",
@@ -3497,7 +3478,7 @@ dependencies = [
  "getrandom",
  "libc",
  "spin",
- "untrusted 0.9.0",
+ "untrusted",
  "windows-sys 0.52.0",
 ]
 
@@ -3599,7 +3580,7 @@ dependencies = [
  "aws-lc-rs",
  "ring",
  "rustls-pki-types",
- "untrusted 0.9.0",
+ "untrusted",
 ]
 
 [[package]]
@@ -4267,12 +4248,6 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
-
-[[package]]
-name = "untrusted"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "untrusted"
