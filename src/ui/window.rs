@@ -99,7 +99,10 @@ impl eframe::App for UI {
                     ui.group(|ui| {
                         ui.add(Label::new(format!("{}", p.protocol.to_string())));
                         
-                        if p.protocol != Protocol::Dhcp {
+
+                        // Some protocols do not allow changing ports (and may be set to 0)
+                        // so we only show the port field if it is not 0
+                        if p.port != 0 {
                             ui.add(DragValue::new(&mut p.port).range(1..=50000));
                         }
 
