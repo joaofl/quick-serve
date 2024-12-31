@@ -7,6 +7,7 @@ pub use tftp::*;
 
 // Import and re-export the submodule files.
 pub mod dhcp;
+pub mod dhcp_server;
 pub mod ftp;
 pub mod http;
 pub mod server;

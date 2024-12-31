@@ -32,7 +32,7 @@ impl Protocol {
     }
     pub fn get_default_port(&self) -> u16 {
         match self {
-            Protocol::Dhcp => 67,
+            Protocol::Dhcp => 6767,
             Protocol::Ftp  => 2121,
             Protocol::Http => 8080,
             Protocol::Tftp => 6969,

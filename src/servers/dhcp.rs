@@ -2,14 +2,16 @@ use async_trait::async_trait;
 use std::path::PathBuf;
 use super::Server;
 use crate::utils::validation;
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use crate::servers::Protocol;
 
 use std::str::FromStr;
-use log::{debug, info};
-// use std::time::Duration;
+use log::debug;
 
+use std::net::UdpSocket;
+use dhcp4r::server as dhcp_server;
+use crate::servers::dhcp_server::DhcpServer;
 
 #[async_trait]
 pub trait DHCPRunner {
@@ -22,7 +24,6 @@ impl DHCPRunner for Server {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
         let mut s = Server::default();
 
-        validation::validate_path(&path).expect("Invalid path");
         validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
 
         let path = validation::ensure_trailing_slash(&path);
@@ -40,36 +41,28 @@ impl DHCPRunner for Server {
 
         let bind_address = self.bind_address;
         let port = self.port;
-        let path = self.path.to_string_lossy().to_string();
+        let ip_port = format!("{}:{}", bind_address, port);
+        let socket_bind = format!("0.0.0.0:{}", port);
 
         tokio::spawn(async move {
-
             loop {
                 debug!("DHCP runner started... Waiting command to connect...");
                 let m = receiver.recv().await.unwrap();
                 debug!("Message received");
-
+                
                 if m.connect {
-                    info!("Connecting...");
-                    // Define new server
-                    // let _ = libundhcp::Server::with_fs(path)
-                    //     .passive_ports(50000..65535)
-                    //     .metrics()
-                    //     .shutdown_indicator(async move {
-                    //         loop {
-                    //             info!("Connected. Waiting command to disconnect...");
-                    //             let _ = receiver.recv().await.unwrap();
-                    //             break;
-                    //         }
-                    //         debug!("Gracefully terminating the DHCP server");
-                    //         // Give a few seconds to potential ongoing connections to finish, 
-                    //         // otherwise finish immediately
-                    //         libundhcp::options::Shutdown::new().grace_period(Duration::from_secs(5))
-                    //     })
-                    //     .build()
-                    //     .unwrap()
-                    //     .listen(format!("{}:{}", bind_address, port))
-                    //     .await.expect("Error starting the HTTP server...");
+                    
+                    debug!("DHCP server started on {}", ip_port);
+
+                    let ms = DhcpServer::default();
+
+                    let socket = UdpSocket::bind(socket_bind.clone()).unwrap();
+                    socket.set_broadcast(true).unwrap();
+
+                    let ipv4: Ipv4Addr = bind_address.clone().to_string().parse().unwrap();
+                    dhcp_server::Server::serve(socket, ipv4, ms);
+
+                    debug!("DHCP server stopped");
                     break;
                 }
             }
