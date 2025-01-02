@@ -49,18 +49,17 @@ impl DHCPRunner for Server {
                 debug!("DHCP runner started... Waiting command to connect...");
                 let m = receiver.recv().await.unwrap();
                 debug!("Message received");
-                
+
                 if m.connect {
-                    
                     debug!("DHCP server started on {}", ip_port);
 
-                    let ms = DhcpServer::default();
+                    let server = DhcpServer::default();
 
                     let socket = UdpSocket::bind(socket_bind.clone()).unwrap();
                     socket.set_broadcast(true).unwrap();
 
                     let ipv4: Ipv4Addr = bind_address.clone().to_string().parse().unwrap();
-                    dhcp_server::Server::serve(socket, ipv4, ms);
+                    dhcp_server::Server::serve(socket, ipv4, server);
 
                     debug!("DHCP server stopped");
                     break;
@@ -71,148 +70,74 @@ impl DHCPRunner for Server {
 }
 
 
-
-
-
-
-
 #[cfg(test)]
 mod tests {
+    use testcontainers::{runners::SyncRunner, GenericImage};
+    use std::sync::Once;
+    use std::process::Command;
 
-    // use testcontainers_modules::{postgres, testcontainers::runners::SyncRunner};
 
-    // use crate::tests::common::tests::*;
-    use std::io::{stdout, BufRead};
-    use crate::servers::Protocol;
-    use testcontainers::{core::{IntoContainerPort, WaitFor}, runners::SyncRunner, GenericImage, ImageExt};
+    static INIT: Once = Once::new();
+    fn build_images() {
+        INIT.call_once(|| {
+            // Create the docker images here
 
-    // #[test]
-    // fn e2e() {
-    //     let proto = Protocol::Dhcp;
-    //     let port = 2223u16;
-    // }
+            let dir = std::env::current_dir().unwrap().join("docker");
+            let _out = Command::new("docker")
+                .arg("compose")
+                .arg("build")
+                .current_dir(dir)
+                .output()
+                .expect("Failed to execute command");
 
+            // println!("{}", String::from_utf8_lossy(&output.stdout));
+        });
+    }
 
     #[test]
-    fn client() {
+    fn ip_assigning() {
+        build_images();
 
-        println!("Client test");
+        let client_thread = std::thread::spawn(move || {
+            let custom_image = GenericImage::new("client_image", "latest");
+            let container = custom_image.start().unwrap();
+            let _ = container.stop();
 
-        // let image = ImageExt::with_cmd(self, cmd)
-        // let docker = clients::Cli::default();
-        let custom_image = GenericImage::new("client_image", "latest");
+            let out = String::from_utf8(container.stderr_to_vec().unwrap()).unwrap();
 
-        // let custom_image = custom_image
-        //     .with_env_var("DEBUG", "1")
-        //     .with_cmd(vec!["sleep", "5"]);
-
-        let container = custom_image.start().unwrap();
-
-
-        let stderr = container.stderr(true);
-        // let stdout = container.stdout(true);
-
-        // it's possible to send logs to another thread
-        let log_follower_thread = std::thread::spawn(move || {
-            // let stdout_lines = stdout.lines();
-            // for line in stdout_lines {
-            //     println!("stdout: {}", line.unwrap());
-            // }
-
-            let mut std_lines = stderr.lines();
-            let expected_messages = [
+            let expected_lines = [
                 "binding to user-specified port",
+                "DHCPDISCOVER on",
+                "bound to 172.12.1.101",
             ];
-            for expected_message in expected_messages {
-                let line = std_lines.next().expect("line must exist")?;
-                if !line.contains(expected_message) {
-                    println!("Log message ('{}') doesn't contain expected message ('{}')", line, expected_message);
-                    anyhow::bail!(
-                        "Log message ('{}') doesn't contain expected message ('{}')",
-                        line,
-                        expected_message
-                    );
-                }
+
+            for expected in &expected_lines {
+                assert!(out.contains(expected), 
+                    "Expected line not found: {}\nCheck on the complete logs:\n{}", expected, out);
             }
-            Ok(())
         });
 
 
-            // let expected_messages = [
-            //     "binding to user-specified port",
-            //     "dadasdasdasdasd",
-            // ];
+        let server_thread = std::thread::spawn(move || {
+            let custom_image = GenericImage::new("server_image", "latest");
+            let container = custom_image.start().unwrap();
+            let _ = container.stop();
 
-            // let mut stdout_lines = stdout.lines();
-            // for expected_message in expected_messages {
-            //     let line = stdout_lines.next().expect("line must exist").unwrap();
-            //     if !line.contains(expected_message) {
-            //         println!("Log message ('{}') doesn't contain expected message ('{}')", line, expected_message);
-            //     }
-            // }
+            let out = String::from_utf8(container.stdout_to_vec().unwrap()).unwrap();
 
-        let _ = log_follower_thread
-            .join().unwrap_or_else(|_| Err(anyhow::anyhow!("failed to join log follower thread")));
+            let expected_lines = [
+                "DHCP server started",
+                "dhcp_server: Request received",
+                "dhcp_server: offered 172.12.1.101",
+            ];
 
-        // logs are accessible after container is stopped
-        let _ = container.stop();
+            for expected in &expected_lines {
+                assert!(out.contains(expected), 
+                    "Expected line not found: {}\nCheck on the complete logs:\n{}", expected, out);
+            }
+        });
 
-
-        let stdout = String::from_utf8(container.stdout_to_vec().unwrap()).unwrap();
-
-        println!("*************stdout:\n\n{}", stdout);
-
+        client_thread.join().unwrap();
+        server_thread.join().unwrap();
     }
-
-    // #[test]
-    // fn sync_logs_are_accessible() -> anyhow::Result<()> {
-    //     let image = GenericImage::new("testcontainers/helloworld", "1.1.0");
-    //     let container = image.start()?;
-
-    //     let stderr = container.stderr(true);
-
-    //     // it's possible to send logs to another thread
-    //     let log_follower_thread = std::thread::spawn(move || {
-    //         let mut stderr_lines = stderr.lines();
-    //         let expected_messages = [
-    //             "DELAY_START_MSEC: 0",
-    //             "Sleeping for 0 ms",
-    //             "Starting server on port 8080",
-    //             "Sleeping for 0 ms",
-    //             "Starting server on port 8081",
-    //             "Ready, listening on 8080 and 8081",
-    //         ];
-    //         for expected_message in expected_messages {
-    //             let line = stderr_lines.next().expect("line must exist")?;
-    //             if !line.contains(expected_message) {
-    //                 anyhow::bail!(
-    //                     "Log message ('{}') doesn't contain expected message ('{}')",
-    //                     line,
-    //                     expected_message
-    //                 );
-    //             }
-    //         }
-    //         Ok(())
-    //     });
-    //     log_follower_thread
-    //         .join()
-    //         .map_err(|_| anyhow::anyhow!("failed to join log follower thread"))??;
-
-    //     // logs are accessible after container is stopped
-    //     container.stop()?;
-
-    //     // stdout is empty
-    //     let stdout = String::from_utf8(container.stdout_to_vec()?)?;
-    //     assert_eq!(stdout, "");
-    //     // stderr contains 6 lines
-    //     let stderr = String::from_utf8(container.stderr_to_vec()?)?;
-    //     assert_eq!(
-    //         stderr.lines().count(),
-    //         6,
-    //         "unexpected stderr size: {}",
-    //         stderr
-    //     );
-    //     Ok(())
-    // }
-
 }
