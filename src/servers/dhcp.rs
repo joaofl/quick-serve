@@ -74,3 +74,145 @@ impl DHCPRunner for Server {
 
 
 
+
+
+#[cfg(test)]
+mod tests {
+
+    // use testcontainers_modules::{postgres, testcontainers::runners::SyncRunner};
+
+    // use crate::tests::common::tests::*;
+    use std::io::{stdout, BufRead};
+    use crate::servers::Protocol;
+    use testcontainers::{core::{IntoContainerPort, WaitFor}, runners::SyncRunner, GenericImage, ImageExt};
+
+    // #[test]
+    // fn e2e() {
+    //     let proto = Protocol::Dhcp;
+    //     let port = 2223u16;
+    // }
+
+
+    #[test]
+    fn client() {
+
+        println!("Client test");
+
+        // let image = ImageExt::with_cmd(self, cmd)
+        // let docker = clients::Cli::default();
+        let custom_image = GenericImage::new("client_image", "latest");
+
+        // let custom_image = custom_image
+        //     .with_env_var("DEBUG", "1")
+        //     .with_cmd(vec!["sleep", "5"]);
+
+        let container = custom_image.start().unwrap();
+
+
+        let stderr = container.stderr(true);
+        // let stdout = container.stdout(true);
+
+        // it's possible to send logs to another thread
+        let log_follower_thread = std::thread::spawn(move || {
+            // let stdout_lines = stdout.lines();
+            // for line in stdout_lines {
+            //     println!("stdout: {}", line.unwrap());
+            // }
+
+            let mut std_lines = stderr.lines();
+            let expected_messages = [
+                "binding to user-specified port",
+            ];
+            for expected_message in expected_messages {
+                let line = std_lines.next().expect("line must exist")?;
+                if !line.contains(expected_message) {
+                    println!("Log message ('{}') doesn't contain expected message ('{}')", line, expected_message);
+                    anyhow::bail!(
+                        "Log message ('{}') doesn't contain expected message ('{}')",
+                        line,
+                        expected_message
+                    );
+                }
+            }
+            Ok(())
+        });
+
+
+            // let expected_messages = [
+            //     "binding to user-specified port",
+            //     "dadasdasdasdasd",
+            // ];
+
+            // let mut stdout_lines = stdout.lines();
+            // for expected_message in expected_messages {
+            //     let line = stdout_lines.next().expect("line must exist").unwrap();
+            //     if !line.contains(expected_message) {
+            //         println!("Log message ('{}') doesn't contain expected message ('{}')", line, expected_message);
+            //     }
+            // }
+
+        let _ = log_follower_thread
+            .join().unwrap_or_else(|_| Err(anyhow::anyhow!("failed to join log follower thread")));
+
+        // logs are accessible after container is stopped
+        let _ = container.stop();
+
+
+        let stdout = String::from_utf8(container.stdout_to_vec().unwrap()).unwrap();
+
+        println!("*************stdout:\n\n{}", stdout);
+
+    }
+
+    // #[test]
+    // fn sync_logs_are_accessible() -> anyhow::Result<()> {
+    //     let image = GenericImage::new("testcontainers/helloworld", "1.1.0");
+    //     let container = image.start()?;
+
+    //     let stderr = container.stderr(true);
+
+    //     // it's possible to send logs to another thread
+    //     let log_follower_thread = std::thread::spawn(move || {
+    //         let mut stderr_lines = stderr.lines();
+    //         let expected_messages = [
+    //             "DELAY_START_MSEC: 0",
+    //             "Sleeping for 0 ms",
+    //             "Starting server on port 8080",
+    //             "Sleeping for 0 ms",
+    //             "Starting server on port 8081",
+    //             "Ready, listening on 8080 and 8081",
+    //         ];
+    //         for expected_message in expected_messages {
+    //             let line = stderr_lines.next().expect("line must exist")?;
+    //             if !line.contains(expected_message) {
+    //                 anyhow::bail!(
+    //                     "Log message ('{}') doesn't contain expected message ('{}')",
+    //                     line,
+    //                     expected_message
+    //                 );
+    //             }
+    //         }
+    //         Ok(())
+    //     });
+    //     log_follower_thread
+    //         .join()
+    //         .map_err(|_| anyhow::anyhow!("failed to join log follower thread"))??;
+
+    //     // logs are accessible after container is stopped
+    //     container.stop()?;
+
+    //     // stdout is empty
+    //     let stdout = String::from_utf8(container.stdout_to_vec()?)?;
+    //     assert_eq!(stdout, "");
+    //     // stderr contains 6 lines
+    //     let stderr = String::from_utf8(container.stderr_to_vec()?)?;
+    //     assert_eq!(
+    //         stderr.lines().count(),
+    //         6,
+    //         "unexpected stderr size: {}",
+    //         stderr
+    //     );
+    //     Ok(())
+    // }
+
+}
