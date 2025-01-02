@@ -73,25 +73,26 @@ impl DHCPRunner for Server {
 #[cfg(test)]
 mod tests {
     use testcontainers::{runners::SyncRunner, GenericImage};
-    use std::sync::Once;
+    use std::env;
     use std::process::Command;
+    // use std::sync::Once;
 
 
-    static INIT: Once = Once::new();
+    // static INIT: Once = Once::new();
     fn build_images() {
-        INIT.call_once(|| {
+        // INIT.call_once(|| {
             // Create the docker images here
+            let cwd = env::var("CARGO_MANIFEST_DIR").unwrap();
 
-            let dir = std::env::current_dir().unwrap().join("docker");
             let _out = Command::new("docker")
                 .arg("compose")
                 .arg("build")
-                .current_dir(dir)
+                .current_dir(format!("{cwd}/docker/"))
                 .output()
-                .expect("Failed to execute command");
+                .expect(&format!("Failed to execute command. Check directory {}", cwd));
 
-            // println!("{}", String::from_utf8_lossy(&output.stdout));
-        });
+            println!("{}", String::from_utf8_lossy(&_out.stdout));
+        // });
     }
 
     #[test]
