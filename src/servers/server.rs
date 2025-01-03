@@ -7,31 +7,34 @@ use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use std::net::IpAddr;
 
-use crate::{Cli, CommandMsg, DefaultChannel, FTPRunner, HTTPRunner, TFTPRunner};
+use crate::{Cli, CommandMsg, DefaultChannel, FTPRunner, HTTPRunner, TFTPRunner, DHCPRunner};
 
 
 #[derive(Debug, Default, PartialEq, Clone)]
 pub enum Protocol {
+    Dhcp,
+    Ftp,
     #[default]
     Http,
     Tftp,
-    Ftp,
 }
 
-pub const PROTOCOL_LIST: [&'static Protocol; 3] = [&Protocol::Http, &Protocol::Tftp, &Protocol::Ftp];
+pub const PROTOCOL_LIST: [&'static Protocol; 4] = [&Protocol::Http, &Protocol::Tftp, &Protocol::Ftp, &Protocol::Dhcp];
 
 impl Protocol {
     pub fn to_string(&self) -> &str {
         match self {
-            Protocol::Http => "http",
+            Protocol::Dhcp => "dhcp",
             Protocol::Ftp  => "ftp",
+            Protocol::Http => "http",
             Protocol::Tftp => "tftp",
         }
     }
     pub fn get_default_port(&self) -> u16 {
         match self {
-            Protocol::Http => 8080,
+            Protocol::Dhcp => 6767,
             Protocol::Ftp  => 2121,
+            Protocol::Http => 8080,
             Protocol::Tftp => 6969,
         }
     }
@@ -119,6 +122,9 @@ pub fn server_starter_receiver(channel: &DefaultChannel<CommandMsg>) {
                         Protocol::Tftp =>{
                             server = <Server as TFTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
                         },
+                        Protocol::Dhcp =>{
+                            server = <Server as DHCPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
+                        },
                     }
 
                     // Wait the receiver to listen before the sender sends the 1rst msg
@@ -172,6 +178,13 @@ pub fn server_starter_sender(cli_args: &Cli, channel: &DefaultChannel<CommandMsg
     if cli_args.tftp.is_some() {
         cmd.protocol = Protocol::Tftp;
         cmd.port = cli_args.tftp.unwrap() as u16;
+        let _ = channel.sender.send(cmd.clone());
+        count += 1;
+    }
+
+    if cli_args.dhcp.is_some() {
+        cmd.protocol = Protocol::Dhcp;
+        cmd.port = cli_args.dhcp.unwrap() as u16;
         let _ = channel.sender.send(cmd.clone());
         count += 1;
     }

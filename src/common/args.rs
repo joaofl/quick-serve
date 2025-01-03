@@ -65,6 +65,15 @@ pub struct Cli {
         require_equals = true,
         value_name = "PORT",
     )] pub tftp: Option<u32>,
+
+    #[arg(
+        default_missing_value = Protocol::Dhcp.get_default_port().to_string(),
+        help = format!("Start the DHCP server [default port: {}]", Protocol::Dhcp.get_default_port().to_string()),
+        long, required = false,
+        num_args = 0..=1,
+        require_equals = true,
+        value_name = "PORT",
+    )] pub dhcp: Option<u32>,
 }
 
 

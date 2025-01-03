@@ -69,7 +69,7 @@ impl FTPRunner for Server {
                         .build()
                         .unwrap()
                         .listen(format!("{}:{}", bind_address, port))
-                        .await.expect("Error starting the HTTP server...");
+                        .await.expect("Error starting the FTP server...");
                     break;
                 }
             }

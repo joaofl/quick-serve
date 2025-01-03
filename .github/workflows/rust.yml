@@ -57,12 +57,13 @@ jobs:
         profile: minimal
         toolchain: stable
 
-    - name: Install extra packages
+    - name: Install Dependencies
       run: |
-        cargo install cross --git https://github.com/cross-rs/cross
+        sudo apt-get update
+        sudo apt-get install -y docker-compose  nasm build-essential clang wget tftp-hpa curl
 
-    - name: Test on target
+    - name: Test
       continue-on-error: false
       run: |
-        cross build --release
-        cross test --release
+        cargo build
+        cargo test -- --nocapture

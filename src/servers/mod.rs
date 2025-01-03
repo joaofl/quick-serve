@@ -1,11 +1,14 @@
 // Re-export the types and items you want to make public from this module.
+pub use dhcp::*;
 pub use ftp::*;
-pub use tftp::*;
 pub use http::*;
 pub use server::*;
+pub use tftp::*;
 
 // Import and re-export the submodule files.
+pub mod dhcp;
+pub mod dhcp_server;
 pub mod ftp;
-pub mod tftp;
 pub mod http;
 pub mod server;
+pub mod tftp;

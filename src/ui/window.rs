@@ -53,9 +53,11 @@ impl eframe::App for UI {
 
                     egui::widgets::global_theme_preference_switch(ui);
 
+                    ui.separator();
                     if ui.button("Exit").clicked() {
                         std::process::exit(0);
                     };
+                    ui.separator();
             });
 
             // #######################################################################
@@ -96,7 +98,13 @@ impl eframe::App for UI {
                 for p in self.protocols.iter_mut() {
                     ui.group(|ui| {
                         ui.add(Label::new(format!("{}", p.protocol.to_string())));
-                        ui.add(DragValue::new(&mut p.port).range(1..=50000));
+                        
+
+                        // Some protocols do not allow changing ports (and may be set to 0)
+                        // so we only show the port field if it is not 0
+                        if p.port != 0 {
+                            ui.add(DragValue::new(&mut p.port).range(1..=50000));
+                        }
 
                         if ui.add(toggle(&mut p.start)).clicked() {
 
