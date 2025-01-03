@@ -4,7 +4,7 @@
 [![](https://deps.rs/repo/github/joaofl/quick-serve/status.svg)](https://deps.rs/repo/github/joaofl/quick-serve)
 
 <p align="center"> 
-  <p align="center"> <img src="media/logo.png" alt="Logo" width="600"/> </p>
+  <p align="center"> <img src="media/logo.png" alt="Logo" width="500"/> </p>
 </p>
 
 # Quick-serve
@@ -16,7 +16,8 @@ It can be used both headless or for an even more friendly experience, it can be 
 <!-- ![alt text](media/screenshot.png "Screenshot") -->
 
 <p align="center">
-  <img src="media/screenshot.png" alt="Screenshot" width="600"/>
+  <img src="media/screenshoot-light.png" alt="Screenshot" width="250"/>
+  <img src="media/screenshoot-dark.png" alt="Screenshot" width="250"/>
 </p>
 
 ## Motivation
@@ -36,19 +37,15 @@ protocol-agnostic solution.
 ## Usage
 
 ```shell
-Quick-serve
-
-Usage: quick-serve [OPTIONS]
-
 Options:
       --headless          Headless
   -b, --bind-ip=<IP>      Bind IP [default: 127.0.0.1]
   -d, --serve-dir=<PATH>  Directory to serve [default: /tmp/]
   -v, --verbose...        Verbose logging
-  --http[=<PORT>]     Start the HTTP server [default port: 8080]
-  --ftp[=<PORT>]      Start the FTP server [default port: 2121]
-  --tftp[=<PORT>]     Start the TFTP server [default port: 6969]
-  --dhcp              Start the DHCP server
+      --http[=<PORT>]     Start the HTTP server [default port: 8080]
+      --ftp[=<PORT>]      Start the FTP server [default port: 2121]
+      --tftp[=<PORT>]     Start the TFTP server [default port: 6969]
+      --dhcp[=<PORT>]     Start the DHCP server [default port: 6767]
   -h, --help              Print help (see more with '--help')
   -V, --version           Print version
 ```
@@ -116,8 +113,8 @@ cargo test
 - [x] FTP
 - [x] HTTP
 - [x] TFTP
-- [ ] HTTPS
 - [x] DHCP
+- [ ] HTTPS
 - [ ] SFTP
 - [ ] NFS
 - [ ] SAMBA
