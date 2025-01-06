@@ -1,17 +1,17 @@
 services:
   client:
-    image: client_image:latest
+    image: test_image:latest
     build:
       context: ../
-      dockerfile: docker/client.dockerfile
+      dockerfile: docker/dockerfile
     networks:
       - c_lan
 
   server:
-    image: server_image:latest
+    image: test_image:latest
     build:
       context: ../
-      dockerfile: docker/server.dockerfile
+      dockerfile: docker/dockerfile
     networks:
       c_lan:
         ipv4_address: 172.12.1.4

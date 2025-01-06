@@ -1,0 +1,11 @@
+# FROM debian:bookworm-slim
+FROM ubuntu:latest
+
+RUN apt-get update && \
+    apt-get install -y isc-dhcp-client && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY ./target/debug/quick-serve /usr/local/bin/quick-serve
+
+# Works as a worst case timeout for each test run
+ENTRYPOINT ["/bin/sh", "-c", "sleep 10"]
