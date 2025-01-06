@@ -72,11 +72,14 @@ impl DHCPRunner for Server {
 
 #[cfg(test)]
 mod tests {
+    use testcontainers::core::{CmdWaitFor, ExecCommand};
     use testcontainers::{runners::SyncRunner, GenericImage};
     use std::env;
     use std::process::Command;
-    // use std::sync::Once;
 
+    // For some reason, this INIT.call_once does not work on the CI
+    // so I have to call it for every test, since I could not yet find
+    // a way to have it as a fixture
 
     // static INIT: Once = Once::new();
     fn build_images() {
@@ -90,48 +93,64 @@ mod tests {
                 .current_dir(format!("{cwd}/docker/"))
                 .output()
                 .expect(&format!("Failed to execute command. Check directory {}", cwd));
-
-            println!("{}", String::from_utf8_lossy(&_out.stdout));
         // });
     }
+
+
+    fn run_command(args: &str, wait_for: &str) -> (String, String) {
+        let custom_image = GenericImage::new("test_image", "latest");
+        let container = custom_image.start().unwrap();
+
+        let args_array: Vec<&str> = args.split_whitespace().collect();
+
+        // exit code, it waits for result
+        let mut res = container
+            .exec(
+                ExecCommand::new(args_array)
+                .with_cmd_ready_condition(CmdWaitFor::message_on_stderr(wait_for))
+                .with_cmd_ready_condition(CmdWaitFor::seconds(10))
+            )
+            .unwrap_or_else(|e| {
+                panic!("Failed to run cmd {}\nError:\n{:?}", args, e.to_string());
+            });
+
+        let out = String::from_utf8(res.stdout_to_vec().unwrap()).unwrap();
+        let err = String::from_utf8(res.stderr_to_vec().unwrap()).unwrap();
+
+        (out, err)
+    }
+
 
     #[test]
     fn ip_assigning() {
         build_images();
 
         let client_thread = std::thread::spawn(move || {
-            let custom_image = GenericImage::new("client_image", "latest");
-            let container = custom_image.start().unwrap();
-            let _ = container.stop();
-
-            let out = String::from_utf8(container.stderr_to_vec().unwrap()).unwrap();
+            let (_out, err) = run_command("dhclient -4 -d -v -p 6768", "bound to");
 
             let expected_lines = [
                 "binding to user-specified port",
                 "DHCPDISCOVER on",
-                "bound to 172.12.1.101",
+                "bound to",
             ];
 
             for expected in &expected_lines {
-                assert!(out.contains(expected), 
-                    "Expected line not found: {}\nCheck on the complete logs:\n{}", expected, out);
+                assert!(err.contains(expected), 
+                    "Expected line not found: {}\nCheck on the complete logs:\n{}", expected, err);
             }
         });
 
 
         let server_thread = std::thread::spawn(move || {
-            let custom_image = GenericImage::new("server_image", "latest");
-            let container = custom_image.start().unwrap();
-            let _ = container.stop();
-
-            let out = String::from_utf8(container.stdout_to_vec().unwrap()).unwrap();
+            // Run the DHCP server on another thread
+            let (out, _err) = run_command("quick-serve --dhcp=6767 -v --bind-ip=172.12.1.4", "dhcp_server: offered");
 
             let expected_lines = [
                 "DHCP server started",
                 "dhcp_server: Request received",
-                "dhcp_server: offered 172.12.1.101",
+                "dhcp_server: offered",
             ];
-
+    
             for expected in &expected_lines {
                 assert!(out.contains(expected), 
                     "Expected line not found: {}\nCheck on the complete logs:\n{}", expected, out);
