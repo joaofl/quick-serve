@@ -16,8 +16,8 @@ It can be used both headless or for an even more friendly experience, it can be 
 <!-- ![alt text](media/screenshot.png "Screenshot") -->
 
 <p align="center">
-  <img src="media/screenshoot-light.png" alt="Screenshot" width="250"/>
-  <img src="media/screenshoot-dark.png" alt="Screenshot" width="250"/>
+  <img src="media/screenshoot-light.png" alt="Screenshot" width="350"/>
+  <img src="media/screenshoot-dark.png" alt="Screenshot" width="350"/>
 </p>
 
 ## Motivation
