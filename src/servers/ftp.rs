@@ -53,7 +53,7 @@ impl FTPRunner for Server {
                     info!("Connecting...");
                     // Define new server
                     let _ = libunftp::Server::with_fs(path)
-                        .passive_ports(50000..65535)
+                        .passive_ports(50000..=65535)
                         .metrics()
                         .shutdown_indicator(async move {
                             loop {

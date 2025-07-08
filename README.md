@@ -102,7 +102,7 @@ cargo install cross --git https://github.com/cross-rs/cross
 ## Test
 
 ```sh
-sudo apt install wget tftp
+sudo apt install wget tftp-hpa
 cargo build
 cargo test
 ```

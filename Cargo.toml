@@ -2,7 +2,7 @@
 [package]
 authors =  ["João Loureiro"]
 name = "quick-serve"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/joaofl/quick-serve"
@@ -29,8 +29,8 @@ tokio = { version = "1.42.0", features = ["full"]}
 async-trait = "0.1.83"
 
 # FTP server deps
-libunftp = "0.20.3"
-unftp-sbe-fs = "0.2.6"
+libunftp = "0.21.0"
+unftp-sbe-fs = "0.3.0"
 
 # TFTP server
 async-tftp = "0.3.6"
@@ -53,18 +53,18 @@ ctrlc = "3.4.5"
 sha2 = "0.10.8"
 
 # For the gui version
-egui = {version = "0.30.0", optional = true}
-eframe = {version = "0.30.0", features = ["wayland"], optional = true}
+egui = {version = "0.31.1", optional = true}
+eframe = {version = "0.31.1", features = ["wayland"], optional = true}
 rfd = {version = "0.15.1", optional = true}
 
 [dev-dependencies]
 
-testcontainers = { version = "0.23.1" }
-testcontainers-modules = { version = "0.11.4", features = ["blocking"] }
+testcontainers = { version = "0.24.0" }
+testcontainers-modules = { version = "0.12.1", features = ["blocking"] }
 
 sha2 = "0.10.8"
 tempfile = "3.15.0"
-rand = "0.8.5"
+rand = "0.9.1"
 assert_cmd = "2.0.16"
 predicates = "3.1.3"
 
