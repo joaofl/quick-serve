@@ -8,6 +8,7 @@ pub trait MyLoggerFn {
 pub struct MyLogger {
     pub log_level: LevelFilter,
     pub logs: Arc<Mutex<Vec<String>>>,
+    max_logs: usize,
 }
 
 impl MyLoggerFn for MyLogger {
@@ -15,6 +16,7 @@ impl MyLoggerFn for MyLogger {
         MyLogger {
             logs: Arc::new(Mutex::new(Vec::new())),
             log_level,
+            max_logs: 10000, // Maximum number of logs to keep in memory
         }
     }
 }
@@ -36,7 +38,17 @@ impl Log for MyLogger {
             );
 
             println!("{}", log_line);
-            self.logs.lock().unwrap().push(log_line.clone());
+            
+            // Add log rotation to prevent memory leaks
+            if let Ok(mut logs) = self.logs.lock() {
+                logs.push(log_line);
+                
+                // If we exceed the maximum number of logs, remove the oldest ones
+                if logs.len() > self.max_logs {
+                    let excess = logs.len() - self.max_logs;
+                    logs.drain(0..excess);
+                }
+            }
         }
     }
 
