@@ -1,4 +1,4 @@
-use log::{info, debug};
+use log::{info, debug, error};
 
 use super::{Protocol, Server};
 
@@ -18,12 +18,26 @@ impl TFTPRunner for Server {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
         let mut s = Server::default();
         
-        validation::validate_path(&path).expect("Invalid path");
-        validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
+        // Validate inputs with proper error handling
+        if let Err(e) = validation::validate_path(&path) {
+            error!("Invalid path '{}': {}", path.display(), e);
+            panic!("Invalid path: {}", e);
+        }
+        
+        if let Err(e) = validation::validate_ip_port(&bind_ip, port) {
+            error!("Invalid bind IP '{}:{}': {}", bind_ip, port, e);
+            panic!("Invalid bind IP: {}", e);
+        }
         
         let path = validation::ensure_trailing_slash(&path);
         s.path = Arc::new(path);
-        s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
+        s.bind_address = match IpAddr::from_str(&bind_ip) {
+            Ok(addr) => addr,
+            Err(e) => {
+                error!("Failed to parse IP address '{}': {}", bind_ip, e);
+                panic!("Invalid IP address: {}", e);
+            }
+        };
         s.port = port;
 
         s.protocol = Protocol::Tftp;
@@ -40,26 +54,62 @@ impl TFTPRunner for Server {
         tokio::spawn(async move {
             loop {
                 // Get notified about the server's spawned task
-                let m = receiver.recv().await.unwrap();
+                let m = match receiver.recv().await {
+                    Ok(msg) => msg,
+                    Err(e) => {
+                        error!("Failed to receive message in TFTP runner: {}", e);
+                        break;
+                    }
+                };
 
                 if m.connect {
-                    info!("Connecting...");
+                    info!("Starting TFTP server on {}:{}", bind_address, port);
                     let tsk = tokio::spawn(async move {
-                            let addr = format!("{}:{}", bind_address, port);
-                            let tftpd =
-                                TftpServerBuilder::with_dir_ro(path.deref()).unwrap()
-                                    .bind(addr.parse().unwrap())
-                                    .build().await.unwrap();
+                        let addr = format!("{}:{}", bind_address, port);
+                        
+                        // Build TFTP server with proper error handling
+                        let tftpd_result = TftpServerBuilder::with_dir_ro(path.deref())
+                            .map_err(|e| format!("Failed to create TFTP server: {}", e))
+                            .and_then(|builder| {
+                                addr.parse()
+                                    .map_err(|e| format!("Invalid address '{}': {}", addr, e))
+                                    .map(|parsed_addr| builder.bind(parsed_addr))
+                            });
 
-                            info!("Starting TFTP server...");
-                            let _ = tftpd.serve().await;
+                        match tftpd_result {
+                            Ok(builder) => {
+                                match builder.build().await {
+                                    Ok(tftpd) => {
+                                        info!("TFTP server listening on {}", addr);
+                                        if let Err(e) = tftpd.serve().await {
+                                            error!("TFTP server error: {}", e);
+                                        }
+                                    }
+                                    Err(e) => {
+                                        error!("Failed to build TFTP server: {}", e);
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                error!("Failed to create TFTP server: {}", e);
+                            }
                         }
-                    );
+                    });
 
-                    let _ = receiver.recv().await.unwrap();
-                    tsk.abort();
-                    debug!("TFTP server stopped");
-                    break;
+                    // Wait for stop command
+                    match receiver.recv().await {
+                        Ok(_) => {
+                            info!("Stop command received, shutting down TFTP server");
+                            tsk.abort();
+                            debug!("TFTP server stopped");
+                            break;
+                        }
+                        Err(e) => {
+                            error!("Failed to receive stop command: {}", e);
+                            tsk.abort();
+                            break;
+                        }
+                    }
                 }
             }
         });

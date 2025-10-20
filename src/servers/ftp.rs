@@ -1,7 +1,7 @@
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::str::FromStr;
-use log::{debug, info};
+use log::{debug, info, error};
 use unftp_sbe_fs::ServerExt;
 use std::time::Duration;
 use super::Server;
@@ -19,12 +19,26 @@ impl FTPRunner for Server {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
         let mut s = Server::default();
 
-        validation::validate_path(&path).expect("Invalid path");
-        validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
+        // Validate inputs with proper error handling
+        if let Err(e) = validation::validate_path(&path) {
+            error!("Invalid path '{}': {}", path.display(), e);
+            panic!("Invalid path: {}", e);
+        }
+        
+        if let Err(e) = validation::validate_ip_port(&bind_ip, port) {
+            error!("Invalid bind IP '{}:{}': {}", bind_ip, port, e);
+            panic!("Invalid bind IP: {}", e);
+        }
 
         let path = validation::ensure_trailing_slash(&path);
         s.path = Arc::new(path);
-        s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
+        s.bind_address = match IpAddr::from_str(&bind_ip) {
+            Ok(addr) => addr,
+            Err(e) => {
+                error!("Failed to parse IP address '{}': {}", bind_ip, e);
+                panic!("Invalid IP address: {}", e);
+            }
+        };
         s.port = port;
 
         s.protocol = Protocol::Ftp;
@@ -40,33 +54,58 @@ impl FTPRunner for Server {
         let path = self.path.to_string_lossy().to_string();
 
         tokio::spawn(async move {
-
             loop {
                 debug!("FTP runner started... Waiting command to connect...");
-                let m = receiver.recv().await.unwrap();
+                
+                let m = match receiver.recv().await {
+                    Ok(msg) => msg,
+                    Err(e) => {
+                        error!("Failed to receive message in FTP runner: {}", e);
+                        break;
+                    }
+                };
                 debug!("Message received");
 
                 if m.connect {
-                    info!("Connecting...");
-                    // Define new server
-                    let _ = libunftp::Server::with_fs(path)
+                    info!("Starting FTP server on {}:{}", bind_address, port);
+                    
+                    // Define new server with proper error handling
+                    let server_result = libunftp::Server::with_fs(path.clone())
                         .passive_ports(50000..=65535)
                         .metrics()
                         .shutdown_indicator(async move {
                             loop {
-                                info!("Connected. Waiting command to disconnect...");
-                                let _ = receiver.recv().await.unwrap();
-                                break;
+                                info!("FTP server connected. Waiting command to disconnect...");
+                                match receiver.recv().await {
+                                    Ok(_) => break,
+                                    Err(e) => {
+                                        error!("Failed to receive stop command: {}", e);
+                                        break;
+                                    }
+                                }
                             }
                             debug!("Gracefully terminating the FTP server");
                             // Give a few seconds to potential ongoing connections to finish, 
                             // otherwise finish immediately
                             libunftp::options::Shutdown::new().grace_period(Duration::from_secs(5))
                         })
-                        .build()
-                        .unwrap()
-                        .listen(format!("{}:{}", bind_address, port))
-                        .await.expect("Error starting the FTP server...");
+                        .build();
+
+                    match server_result {
+                        Ok(server) => {
+                            let listen_addr = format!("{}:{}", bind_address, port);
+                            info!("FTP server listening on {}", listen_addr);
+                            
+                            if let Err(e) = server.listen(&listen_addr).await {
+                                error!("Error starting the FTP server on {}: {}", listen_addr, e);
+                            } else {
+                                info!("FTP server stopped gracefully");
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to build FTP server: {}", e);
+                        }
+                    }
                     break;
                 }
             }

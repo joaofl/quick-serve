@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::{debug, info, error};
 use tokio::sync::broadcast;
 use tokio::time::sleep;
 use std::process::exit;
@@ -7,7 +7,7 @@ use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use std::net::IpAddr;
 
-use crate::{Cli, CommandMsg, DefaultChannel, FTPRunner, HTTPRunner, TFTPRunner, DHCPRunner};
+use crate::{Cli, CommandMsg, DefaultChannel, FTPRunner, HTTPRunner, TFTPRunner, DHCPRunner, QuickServeError, QuickServeResult};
 
 
 #[derive(Debug, Default, PartialEq, Clone)]
@@ -66,27 +66,35 @@ impl Default for Server {
 }
 
 impl Server {
-    pub fn start(&self) -> Result<(), String> {
+    pub fn start(&self) -> QuickServeResult<()> {
         info!("Starting {} server bind to {}:{}", self.protocol.to_string(), self.bind_address, self.port);
         info!("Serving {}", self.path.to_string_lossy());
 
         let s = Message{connect: true};
-        let _ = self.sender.send(s).map_err(|err| format!("Error sending message: {:?}", err))?;
+        self.sender.send(s)
+            .map_err(|err| QuickServeError::server_lifecycle(format!("Error sending start message: {:?}", err)))?;
         Ok(())
     }
 
-    pub fn stop(&self){
+    pub fn stop(&self) -> QuickServeResult<()> {
         // Stop the serving loop to exit the application. 
         // Mostly required by the headless version (single sessions).
 
+        info!("Stopping {} server", self.protocol.to_string());
+        
         // First stop and to then stop
         let m = Message {connect: false};
 
         // Send twice. Once to make sure the server is stopped (inner loop)
         // and the second to ensure runner exits.
-        let _ = self.sender.send(m.clone());
-        let _ = self.sender.send(m);
+        self.sender.send(m.clone())
+            .map_err(|err| QuickServeError::server_lifecycle(format!("Error sending first stop message: {:?}", err)))?;
+        
+        self.sender.send(m)
+            .map_err(|err| QuickServeError::server_lifecycle(format!("Error sending second stop message: {:?}", err)))?;
+        
         info!("{} server stopped", self.protocol.to_string());
+        Ok(())
     }
 }
 
@@ -130,14 +138,30 @@ pub fn server_starter_receiver(channel: &DefaultChannel<CommandMsg>) {
                     // Wait the receiver to listen before the sender sends the 1rst msg
                     // TODO: use some flag instead
                     sleep(Duration::from_millis(100)).await;
-                    let _ = server.start();
-                    info!("Started server");
+                    
+                    if let Err(e) = server.start() {
+                        error!("Failed to start {} server: {}", msg.protocol.to_string(), e);
+                        continue;
+                    }
+                    info!("Started {} server", msg.protocol.to_string());
 
                     // Once started, wait for termination
-                    let _msg = rcv.recv().await.unwrap();
-
-                    let _ = server.stop();
-                    info!("Server stopped");
+                    match rcv.recv().await {
+                        Ok(_msg) => {
+                            if let Err(e) = server.stop() {
+                                error!("Failed to stop {} server: {}", msg.protocol.to_string(), e);
+                            } else {
+                                info!("{} server stopped", msg.protocol.to_string());
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to receive stop message for {} server: {}", msg.protocol.to_string(), e);
+                            // Try to stop the server anyway
+                            if let Err(stop_err) = server.stop() {
+                                error!("Failed to stop {} server after receive error: {}", msg.protocol.to_string(), stop_err);
+                            }
+                        }
+                    }
                 }
             }
         });

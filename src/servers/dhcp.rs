@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::servers::Protocol;
 
 use std::str::FromStr;
-use log::debug;
+use log::{debug, info, error};
 
 use std::net::UdpSocket;
 use dhcp4r::server as dhcp_server;
@@ -21,11 +21,21 @@ impl DHCPRunner for Server {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
         let mut s = Server::default();
 
-        validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
+        // Validate inputs with proper error handling
+        if let Err(e) = validation::validate_ip_port(&bind_ip, port) {
+            error!("Invalid bind IP '{}:{}': {}", bind_ip, port, e);
+            panic!("Invalid bind IP: {}", e);
+        }
 
         let path = validation::ensure_trailing_slash(&path);
         s.path = Arc::new(path);
-        s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
+        s.bind_address = match IpAddr::from_str(&bind_ip) {
+            Ok(addr) => addr,
+            Err(e) => {
+                error!("Failed to parse IP address '{}': {}", bind_ip, e);
+                panic!("Invalid IP address: {}", e);
+            }
+        };
         s.port = port;
 
         s.protocol = Protocol::Dhcp;
@@ -44,21 +54,52 @@ impl DHCPRunner for Server {
         tokio::spawn(async move {
             loop {
                 debug!("DHCP runner started... Waiting command to connect...");
-                let m = receiver.recv().await.unwrap();
+                
+                let m = match receiver.recv().await {
+                    Ok(msg) => msg,
+                    Err(e) => {
+                        error!("Failed to receive message in DHCP runner: {}", e);
+                        break;
+                    }
+                };
                 debug!("Message received");
 
                 if m.connect {
-                    debug!("DHCP server started on {}", ip_port);
+                    info!("Starting DHCP server on {}", ip_port);
 
                     let server = DhcpServer::default();
 
-                    let socket = UdpSocket::bind(socket_bind.clone()).unwrap();
-                    socket.set_broadcast(true).unwrap();
+                    // Bind socket with proper error handling
+                    let socket = match UdpSocket::bind(&socket_bind) {
+                        Ok(socket) => {
+                            info!("DHCP server bound to {}", socket_bind);
+                            socket
+                        }
+                        Err(e) => {
+                            error!("Failed to bind DHCP server to {}: {}", socket_bind, e);
+                            break;
+                        }
+                    };
 
-                    let ipv4: Ipv4Addr = bind_address.clone().to_string().parse().unwrap();
+                    // Set broadcast with error handling
+                    if let Err(e) = socket.set_broadcast(true) {
+                        error!("Failed to set broadcast on DHCP socket: {}", e);
+                        break;
+                    }
+
+                    // Parse IPv4 address with error handling
+                    let ipv4 = match bind_address.to_string().parse::<Ipv4Addr>() {
+                        Ok(addr) => addr,
+                        Err(e) => {
+                            error!("Failed to parse IPv4 address '{}': {}", bind_address, e);
+                            break;
+                        }
+                    };
+
+                    info!("DHCP server serving on {} with IP {}", socket_bind, ipv4);
                     dhcp_server::Server::serve(socket, ipv4, server);
 
-                    debug!("DHCP server stopped");
+                    info!("DHCP server stopped");
                     break;
                 }
             }
