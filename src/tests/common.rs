@@ -1,26 +1,25 @@
-
 #[cfg(test)]
 pub mod tests {
-    use std::fs::{File};
-    use std::io::{Write};
+    use std::fs::File;
+    use std::io::Write;
     use std::path::PathBuf;
-    use clap::Error;
-    use tempfile::Builder;
-    use sha2::{Digest, Sha256};
-    use std::{fs, io, thread};
-    use std::time::Duration;
+    // Use standard io::Result for temporary file/dir operations
     use assert_cmd::Command;
-    use rand::Rng;
+    use sha2::{Digest, Sha256};
+    use std::time::Duration;
+    use std::{fs, io, thread};
+    use tempfile::Builder;
+
     use crate::servers::Protocol;
 
-    pub fn make_tmp(filename: &str) -> Result<PathBuf, Error> {
+    pub fn make_tmp(filename: &str) -> io::Result<PathBuf> {
         // Create a temporary directory
         let temp_dir = Builder::new().tempdir()?;
 
         // Generate random data
         let n_bytes = 1000;
-        let mut rng = rand::thread_rng();
-        let data: Vec<u8> = (0..n_bytes).map(|_| rng.gen()).collect();
+        // Use the free `rand::random` function to avoid deprecated `thread_rng` / `gen` usages
+        let data: Vec<u8> = (0..n_bytes).map(|_| rand::random::<u8>()).collect();
 
         // Create a file inside the temporary directory
         let file_path = temp_dir.path().join(filename);
@@ -30,14 +29,14 @@ pub mod tests {
         // Write random text to the file
         // writeln!(file, "{}" ,data)?;
 
-        // Get the directory path as a String
-        let dir_path = temp_dir.into_path();
+        // Keep the temporary directory and obtain its path. `keep` replaces the
+        // deprecated `into_path` API.
+        let dir_path = temp_dir.keep();
 
         Ok(dir_path)
     }
 
-
-    pub fn compare_files(f1: &PathBuf, f2: &PathBuf) -> Result<bool, Error> {
+    pub fn compare_files(f1: &PathBuf, f2: &PathBuf) -> io::Result<bool> {
         let mut file1 = fs::File::open(&f1)?;
         let mut file2 = fs::File::open(&f2)?;
 
@@ -52,15 +51,25 @@ pub mod tests {
         Ok(h1 == h2)
     }
 
-
-    pub fn test_server_e2e(proto: Protocol, port: u16, dl_cmd: String, file_in: &str, file_out: &str) {
+    pub fn test_server_e2e(
+        proto: Protocol,
+        port: u16,
+        dl_cmd: String,
+        file_in: &str,
+        file_out: &str,
+    ) {
         // let file_name = "data.bin";
-        let dir_path=  make_tmp(file_in).unwrap();
+        let dir_path = make_tmp(file_in).unwrap();
         let dir_path_c = dir_path.clone();
 
         let server = thread::spawn(move || {
             let mut cmd = Command::cargo_bin("quick-serve").unwrap();
-            let arg_str = format!("--headless -d={} -b=127.0.0.1 -v --{}={}", dir_path.to_str().unwrap(), proto.to_string(), port);
+            let arg_str = format!(
+                "--headless -d={} -b=127.0.0.1 -v --{}={}",
+                dir_path.to_str().unwrap(),
+                proto.to_string(),
+                port
+            );
             println!("Running cmd: {}", arg_str);
             cmd.timeout(Duration::from_secs(2));
             cmd.args(arg_str.split_whitespace());
@@ -83,17 +92,36 @@ pub mod tests {
 
         // The result here is always an error as the server gets killed.
         let out_server = server.join();
-        assert!(out_server.is_err(), "Server exited gracefully while it should have not: {:?}", out_server);
+        assert!(
+            out_server.is_err(),
+            "Server exited gracefully while it should have not: {:?}",
+            out_server
+        );
 
         let file_in = dir_path_c.join(file_in);
-        assert!(file_in.exists(), "File {} does not exist!", file_in.to_str().unwrap());
+        assert!(
+            file_in.exists(),
+            "File {} does not exist!",
+            file_in.to_str().unwrap()
+        );
 
         let file_out = PathBuf::from(file_out);
-        assert!(file_out.exists(), "File {} does not exist!", file_out.to_string_lossy());
-        assert!(file_out.metadata().unwrap().len() > 0, "File {} is empty!", file_out.to_string_lossy());
+        assert!(
+            file_out.exists(),
+            "File {} does not exist!",
+            file_out.to_string_lossy()
+        );
+        assert!(
+            file_out.metadata().unwrap().len() > 0,
+            "File {} is empty!",
+            file_out.to_string_lossy()
+        );
 
         let r = compare_files(&file_in, &PathBuf::from(file_out)).unwrap();
 
-        assert!(r, "Content of files served and downloaded are not the same!");
+        assert!(
+            r,
+            "Content of files served and downloaded are not the same!"
+        );
     }
 }
