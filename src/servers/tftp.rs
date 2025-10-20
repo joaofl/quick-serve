@@ -1,7 +1,6 @@
 use log::{info, debug};
 
 use super::{Protocol, Server};
-use async_trait::async_trait;
 
 // Create the TFTP server.
 use async_tftp::server::TftpServerBuilder;
@@ -10,13 +9,11 @@ use crate::utils::validation;
 use std::sync::Arc;
 
 
-#[async_trait]
 pub trait TFTPRunner {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
     fn runner(&self);
 }
 
-#[async_trait]
 impl TFTPRunner for Server {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
         let mut s = Server::default();

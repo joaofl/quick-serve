@@ -1,6 +1,5 @@
 use log::{debug, info};
 
-use async_trait::async_trait;
 use bytes::Bytes;
 use crate::servers::Protocol;
 use crate::utils::validation;
@@ -43,13 +42,11 @@ async fn receive_request(req: Request<hyper::body::Incoming>, base_path: Arc<Pat
 }
 
 
-#[async_trait]
 pub trait HTTPRunner {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
     fn runner(&self);
 }
 
-#[async_trait]
 impl HTTPRunner for Server {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
         let mut s = Server::default();

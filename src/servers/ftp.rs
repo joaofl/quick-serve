@@ -5,19 +5,16 @@ use log::{debug, info};
 use unftp_sbe_fs::ServerExt;
 use std::time::Duration;
 use super::Server;
-use async_trait::async_trait;
 use crate::servers::Protocol;
 use crate::utils::validation;
 use std::sync::Arc;
 
 
-#[async_trait]
 pub trait FTPRunner {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
     fn runner(&self);
 }
 
-#[async_trait]
 impl FTPRunner for Server {
     fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
         let mut s = Server::default();
