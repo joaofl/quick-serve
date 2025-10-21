@@ -6,6 +6,13 @@ use tokio::sync::broadcast::Sender;
 
 use crate::{CommandMsg, PROTOCOL_LIST};
 
+/// Sets up the Ctrl+C signal handler for graceful shutdown
+///
+/// When Ctrl+C is received, sends stop messages to all running servers
+/// and waits for them to shut down gracefully before exiting.
+///
+/// # Arguments
+/// * `sender` - The broadcast sender to send stop commands to all servers
 pub fn setup_ctrlc_handler(sender: Sender<CommandMsg>) {
     ////////////////////////////////////////////////////////////////////////
     // Ctrl+c handler - gracefully stop all servers before exiting
