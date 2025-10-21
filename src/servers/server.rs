@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::{debug, info, error};
 use tokio::sync::broadcast;
 use tokio::time::sleep;
 use std::process::exit;
@@ -7,10 +7,10 @@ use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use std::net::IpAddr;
 
-use crate::{Cli, CommandMsg, DefaultChannel, FTPRunner, HTTPRunner, TFTPRunner, DHCPRunner};
+use crate::{Cli, CommandMsg, DefaultChannel, FTPRunner, HTTPRunner, TFTPRunner, DHCPRunner, QuickServeError, QuickServeResult};
 
 
-#[derive(Debug, Default, PartialEq, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Hash, Clone)]
 pub enum Protocol {
     Dhcp,
     Ftp,
@@ -22,6 +22,7 @@ pub enum Protocol {
 pub const PROTOCOL_LIST: [&'static Protocol; 4] = [&Protocol::Http, &Protocol::Tftp, &Protocol::Ftp, &Protocol::Dhcp];
 
 impl Protocol {
+    /// Returns the protocol name as a string
     pub fn to_string(&self) -> &str {
         match self {
             Protocol::Dhcp => "dhcp",
@@ -30,6 +31,8 @@ impl Protocol {
             Protocol::Tftp => "tftp",
         }
     }
+    
+    /// Returns the default port for the protocol
     pub fn get_default_port(&self) -> u16 {
         match self {
             Protocol::Dhcp => 6767,
@@ -40,16 +43,24 @@ impl Protocol {
     }
 }
 
+/// Message used for internal server communication
 #[derive(Default, Clone, Debug)]
 pub struct Message {
+    /// Whether to connect (true) or disconnect (false)
     pub connect: bool,
 }
 
+/// Represents a server instance with its configuration
 pub struct Server {
+    /// Broadcast sender for control messages
     pub sender: broadcast::Sender<Message>,
+    /// The protocol this server handles
     pub protocol: Protocol,
+    /// Path to serve files from
     pub path: Arc<PathBuf>,
+    /// IP address to bind to
     pub bind_address: IpAddr,
+    /// Port to listen on
     pub port: u16
 }
 
@@ -66,32 +77,59 @@ impl Default for Server {
 }
 
 impl Server {
-    pub fn start(&self) -> Result<(), String> {
+    /// Starts the server by sending a connect message
+    ///
+    /// # Returns
+    /// * `Ok(())` if the message was sent successfully
+    /// * `Err(QuickServeError)` if sending the message failed
+    pub fn start(&self) -> QuickServeResult<()> {
         info!("Starting {} server bind to {}:{}", self.protocol.to_string(), self.bind_address, self.port);
         info!("Serving {}", self.path.to_string_lossy());
 
         let s = Message{connect: true};
-        let _ = self.sender.send(s).map_err(|err| format!("Error sending message: {:?}", err))?;
+        self.sender.send(s)
+            .map_err(|err| QuickServeError::server_lifecycle(format!("Error sending start message: {:?}", err)))?;
         Ok(())
     }
 
-    pub fn stop(&self){
+    /// Stops the server by sending disconnect messages
+    ///
+    /// Sends two disconnect messages to ensure both the inner loop and runner exit.
+    ///
+    /// # Returns
+    /// * `Ok(())` if the messages were sent successfully
+    /// * `Err(QuickServeError)` if sending messages failed
+    pub fn stop(&self) -> QuickServeResult<()> {
         // Stop the serving loop to exit the application. 
         // Mostly required by the headless version (single sessions).
 
+        info!("Stopping {} server", self.protocol.to_string());
+        
         // First stop and to then stop
         let m = Message {connect: false};
 
         // Send twice. Once to make sure the server is stopped (inner loop)
         // and the second to ensure runner exits.
-        let _ = self.sender.send(m.clone());
-        let _ = self.sender.send(m);
+        self.sender.send(m.clone())
+            .map_err(|err| QuickServeError::server_lifecycle(format!("Error sending first stop message: {:?}", err)))?;
+        
+        self.sender.send(m)
+            .map_err(|err| QuickServeError::server_lifecycle(format!("Error sending second stop message: {:?}", err)))?;
+        
         info!("{} server stopped", self.protocol.to_string());
+        Ok(())
     }
 }
 
 
 
+/// Starts receiver tasks for all protocols
+///
+/// Spawns one async task per protocol that listens for start/stop commands
+/// and manages the lifecycle of each server.
+///
+/// # Arguments
+/// * `channel` - The broadcast channel for sending commands to servers
 pub fn server_starter_receiver(channel: &DefaultChannel<CommandMsg>) {
     ////////////////////////////////////////////////////////////////////////
     // Spawn one thread per protocol and start waiting for command
@@ -110,34 +148,56 @@ pub fn server_starter_receiver(channel: &DefaultChannel<CommandMsg>) {
                 }
 
                 if msg.start == true {
-                    let server;
+                    let server = match msg.protocol {
+                        Protocol::Http => {
+                            <Server as HTTPRunner>::new(msg.path.clone().into(), msg.bind_ip.clone(), msg.port)
+                        },
+                        Protocol::Ftp => {
+                            <Server as FTPRunner>::new(msg.path.clone().into(), msg.bind_ip.clone(), msg.port)
+                        },
+                        Protocol::Tftp => {
+                            <Server as TFTPRunner>::new(msg.path.clone().into(), msg.bind_ip.clone(), msg.port)
+                        },
+                        Protocol::Dhcp => {
+                            <Server as DHCPRunner>::new(msg.path.clone().into(), msg.bind_ip.clone(), msg.port)
+                        },
+                    };
 
-                    match msg.protocol {
-                        Protocol::Http =>{
-                            server = <Server as HTTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
-                        },
-                        Protocol::Ftp =>{
-                            server = <Server as FTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
-                        },
-                        Protocol::Tftp =>{
-                            server = <Server as TFTPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
-                        },
-                        Protocol::Dhcp =>{
-                            server = <Server as DHCPRunner>::new(msg.path.into(), msg.bind_ip, msg.port);
-                        },
+                    let server = match server {
+                        Ok(s) => s,
+                        Err(e) => {
+                            error!("Failed to create {} server: {}", msg.protocol.to_string(), e);
+                            continue;
+                        }
+                    };
+
+                    // Small delay to ensure the server's internal receiver is ready
+                    // This is necessary because the server spawns async tasks that need to subscribe
+                    sleep(Duration::from_millis(10)).await;
+                    
+                    if let Err(e) = server.start() {
+                        error!("Failed to start {} server: {}", msg.protocol.to_string(), e);
+                        continue;
                     }
-
-                    // Wait the receiver to listen before the sender sends the 1rst msg
-                    // TODO: use some flag instead
-                    sleep(Duration::from_millis(100)).await;
-                    let _ = server.start();
-                    info!("Started server");
+                    info!("Started {} server", msg.protocol.to_string());
 
                     // Once started, wait for termination
-                    let _msg = rcv.recv().await.unwrap();
-
-                    let _ = server.stop();
-                    info!("Server stopped");
+                    match rcv.recv().await {
+                        Ok(_msg) => {
+                            if let Err(e) = server.stop() {
+                                error!("Failed to stop {} server: {}", msg.protocol.to_string(), e);
+                            } else {
+                                info!("{} server stopped", msg.protocol.to_string());
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to receive stop message for {} server: {}", msg.protocol.to_string(), e);
+                            // Try to stop the server anyway
+                            if let Err(stop_err) = server.stop() {
+                                error!("Failed to stop {} server after receive error: {}", msg.protocol.to_string(), stop_err);
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -145,6 +205,15 @@ pub fn server_starter_receiver(channel: &DefaultChannel<CommandMsg>) {
 }
 
 
+/// Processes CLI arguments and sends start commands for requested servers
+///
+/// Validates the bind address and path, then sends start messages for each
+/// server protocol specified in the command-line arguments. Blocks indefinitely
+/// waiting for the Ctrl+C handler to terminate the process.
+///
+/// # Arguments
+/// * `cli_args` - Parsed command-line arguments
+/// * `channel` - The broadcast channel for sending commands to servers
 pub fn server_starter_sender(cli_args: &Cli, channel: &DefaultChannel<CommandMsg>) {
     // Read and validate the bind address
     let bind_ip = &cli_args.bind_ip;
@@ -164,28 +233,36 @@ pub fn server_starter_sender(cli_args: &Cli, channel: &DefaultChannel<CommandMsg
     if cli_args.http.is_some() {
         cmd.protocol = Protocol::Http;
         cmd.port = cli_args.http.unwrap() as u16;
-        let _ = channel.sender.send(cmd.clone());
+        if let Err(e) = channel.sender.send(cmd.clone()) {
+            error!("Failed to send HTTP start command: {}", e);
+        }
         count += 1;
     }
 
     if cli_args.ftp.is_some() {
         cmd.protocol = Protocol::Ftp;
         cmd.port = cli_args.ftp.unwrap() as u16;
-        let _ = channel.sender.send(cmd.clone());
+        if let Err(e) = channel.sender.send(cmd.clone()) {
+            error!("Failed to send FTP start command: {}", e);
+        }
         count += 1;
     }
 
     if cli_args.tftp.is_some() {
         cmd.protocol = Protocol::Tftp;
         cmd.port = cli_args.tftp.unwrap() as u16;
-        let _ = channel.sender.send(cmd.clone());
+        if let Err(e) = channel.sender.send(cmd.clone()) {
+            error!("Failed to send TFTP start command: {}", e);
+        }
         count += 1;
     }
 
     if cli_args.dhcp.is_some() {
         cmd.protocol = Protocol::Dhcp;
         cmd.port = cli_args.dhcp.unwrap() as u16;
-        let _ = channel.sender.send(cmd.clone());
+        if let Err(e) = channel.sender.send(cmd.clone()) {
+            error!("Failed to send DHCP start command: {}", e);
+        }
         count += 1;
     }
 
@@ -194,10 +271,9 @@ pub fn server_starter_sender(cli_args: &Cli, channel: &DefaultChannel<CommandMsg
         exit(2);
     }
     else {
-        // TODO: make this a feature: run for N seconds and exit
-        // TODO: get some periodic stats as well
-        loop {
-            std::thread::sleep(Duration::from_secs(60));
-        }
+        // Wait indefinitely for signals (Ctrl+C handler will terminate the process)
+        // This is more efficient than busy-waiting with sleep
+        info!("All servers started. Waiting for shutdown signal...");
+        std::thread::park();
     }
 }

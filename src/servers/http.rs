@@ -1,13 +1,12 @@
-use log::{debug, info};
+use log::{debug, info, error};
 
-use async_trait::async_trait;
 use bytes::Bytes;
 use crate::servers::Protocol;
 use crate::utils::validation;
 use http_body_util::Full;
 
 use hyper_util::rt::TokioIo;
-use hyper::{Request, Response};
+use hyper::{Request, Response, StatusCode};
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 
@@ -26,44 +25,73 @@ async fn receive_request(req: Request<hyper::body::Incoming>, base_path: Arc<Pat
     // Path treating it as absolute path and ignoring the base path
     let req_path = req.uri().path().strip_prefix('/').unwrap_or(req.uri().path());
 
-    let file_path = base_path.join(req_path);
+    // Use the new validation function for security checks
+    let file_path = match crate::utils::validation::validate_file_path(&base_path, req_path) {
+        Ok(path) => path,
+        Err(e) => {
+            error!("Path validation failed for '{}': {}", req_path, e);
+            return Ok(Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .body(Full::new(Bytes::from("Invalid path")))
+                .unwrap());
+        }
+    };
 
     info!("Request path: {}", file_path.display());
 
     if !file_path.exists() {
         info!("File does not exist: {}", file_path.display());
         return Ok(Response::builder()
-            .status(404)
+            .status(StatusCode::NOT_FOUND)
             .body(Full::new(Bytes::from("File not found")))
             .unwrap());
     }
 
-    let file_content = tokio::fs::read(file_path).await.unwrap();
-    Ok(Response::new(Full::new(Bytes::from(file_content))))
+    if !file_path.is_file() {
+        info!("Path is not a file: {}", file_path.display());
+        return Ok(Response::builder()
+            .status(StatusCode::BAD_REQUEST)
+            .body(Full::new(Bytes::from("Path is not a file")))
+            .unwrap());
+    }
+
+    match tokio::fs::read(&file_path).await {
+        Ok(file_content) => {
+            info!("Successfully served file: {} ({} bytes)", file_path.display(), file_content.len());
+            Ok(Response::new(Full::new(Bytes::from(file_content))))
+        }
+        Err(e) => {
+            error!("Failed to read file {}: {}", file_path.display(), e);
+            Ok(Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Full::new(Bytes::from("Internal server error")))
+                .unwrap())
+        }
+    }
 }
 
 
-#[async_trait]
 pub trait HTTPRunner {
-    fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
+    fn new(path: PathBuf, bind_ip: String, port: u16) -> Result<Self, crate::QuickServeError> where Self: Sized;
     fn runner(&self);
 }
 
-#[async_trait]
 impl HTTPRunner for Server {
-    fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
+    fn new(path: PathBuf, bind_ip: String, port: u16) -> Result<Self, crate::QuickServeError> {
         let mut s = Server::default();
 
-        validation::validate_path(&path).expect("Invalid path");
-        validation::validate_ip_port(&bind_ip, port).expect("Invalid bind IP");
+        // Validate inputs with proper error handling
+        validation::validate_path(&path)?;
+        validation::validate_ip_port(&bind_ip, port)?;
 
         s.path = Arc::new(path.clone()); // Make a clone of the path and store it in the Server struct
-        s.bind_address = IpAddr::from_str(&bind_ip).expect("Invalid IP address");
+        s.bind_address = IpAddr::from_str(&bind_ip)
+            .map_err(|e| crate::QuickServeError::validation(format!("Invalid IP address '{}': {}", bind_ip, e)))?;
         s.port = port;
 
         s.protocol = Protocol::Http;
         HTTPRunner::runner(&s);
-        s
+        Ok(s)
     }
 
     fn runner(&self) {
@@ -75,37 +103,72 @@ impl HTTPRunner for Server {
         
         tokio::spawn(async move {
             loop {
-                debug!("Runner started. Waiting command to connect...");
-                let m = receiver.recv().await.unwrap();
+                debug!("HTTP runner started. Waiting command to connect...");
+                
+                let m = match receiver.recv().await {
+                    Ok(msg) => msg,
+                    Err(e) => {
+                        error!("Failed to receive message in HTTP runner: {}", e);
+                        break;
+                    }
+                };
                 debug!("Message received");
 
                 if m.connect {
-                    info!("Connecting...");
-                    // Create a SocketAddr from the IpAddr and port
-
+                    info!("Starting HTTP server on {}:{}", bind_address, port);
+                    
                     let tsk = tokio::spawn(async move {
                         let socket_addr = SocketAddr::new(bind_address, port);
-                        let listener = TcpListener::bind(socket_addr).await.unwrap();
+                        
+                        let listener = match TcpListener::bind(socket_addr).await {
+                            Ok(listener) => {
+                                info!("HTTP server listening on {}", socket_addr);
+                                listener
+                            }
+                            Err(e) => {
+                                error!("Failed to bind HTTP server to {}: {}", socket_addr, e);
+                                return;
+                            }
+                        };
 
                         loop {
-                            let (stream, _) = listener.accept().await.unwrap();
-                            let io = TokioIo::new(stream);
-                            let path_clone = path.clone();
+                            match listener.accept().await {
+                                Ok((stream, addr)) => {
+                                    debug!("New HTTP connection from {}", addr);
+                                    let io = TokioIo::new(stream);
+                                    let path_clone = path.clone();
 
-                            info!("Serving...");
-                            if let Err(err) = http1::Builder::new()
-                                .serve_connection(io, service_fn(move |req| receive_request(req, path_clone.clone())))
-                                .await
-                            {
-                                println!("Error serving connection: {:?}", err);
+                                    tokio::spawn(async move {
+                                        if let Err(err) = http1::Builder::new()
+                                            .serve_connection(io, service_fn(move |req| receive_request(req, path_clone.clone())))
+                                            .await
+                                        {
+                                            error!("Error serving HTTP connection from {}: {:?}", addr, err);
+                                        }
+                                    });
+                                }
+                                Err(e) => {
+                                    error!("Failed to accept HTTP connection: {}", e);
+                                    // Continue accepting other connections
+                                }
                             }
                         }
                     });
 
-                    let _ = receiver.recv().await.unwrap();
-                    tsk.abort();
-                    debug!("HTTP server stopped");
-                    break;
+                    // Wait for stop command
+                    match receiver.recv().await {
+                        Ok(_) => {
+                            info!("Stop command received, shutting down HTTP server");
+                            tsk.abort();
+                            debug!("HTTP server stopped");
+                            break;
+                        }
+                        Err(e) => {
+                            error!("Failed to receive stop command: {}", e);
+                            tsk.abort();
+                            break;
+                        }
+                    }
                 }
             }
         });
@@ -122,13 +185,62 @@ mod tests {
     use crate::servers::Protocol;
 
     #[test]
-    fn e2e() {
+    fn test_http_file_download_success() {
         let proto = Protocol::Http;
         let port = 8079u16;
         let file_in = "data.bin";
         let file_out = "/tmp/data-out-http.bin";
         let dl_cmd = format!("wget -t2 -T1 {}://127.0.0.1:{}/{} -O {}", proto.to_string(), port, file_in, file_out);
 
-        test_server_e2e(proto, port, dl_cmd, file_in, file_out);
+        let result = test_server_e2e(proto, port, dl_cmd, file_in, file_out);
+        assert!(result.is_ok(), "Test failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_file_not_found() {
+        let proto = Protocol::Http;
+        let port = 8080u16;
+        let file_in = "data.bin";
+        let nonexistent_file = "nonexistent.bin";
+        let file_out = "/tmp/data-out-http-404.bin";
+        let dl_cmd = format!("wget -t1 -T1 {}://127.0.0.1:{}/{} -O {} 2>&1 || true", 
+            proto.to_string(), port, nonexistent_file, file_out);
+
+        let result = test_server_e2e(proto, port, dl_cmd, file_in, file_out);
+        assert!(result.is_err(), "Expected failure for non-existent file");
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("empty"), "Expected empty file error, got: {}", err_msg);
+    }
+
+    #[test]
+    fn test_path_is_directory() {
+        let proto = Protocol::Http;
+        let port = 8081u16;
+        let file_in = "data.bin";
+        let file_out = "/tmp/data-out-http-dir.bin";
+        let dl_cmd = format!("wget -t1 -T1 {}://127.0.0.1:{}/ -O {} 2>&1 || true", 
+            proto.to_string(), port, file_out);
+
+        let result = test_server_e2e(proto, port, dl_cmd, file_in, file_out);
+        assert!(result.is_err(), "Expected failure for directory path");
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("empty") || err_msg.contains("does not exist"), 
+            "Expected empty file or non-existent error, got: {}", err_msg);
+    }
+
+    #[test]
+    fn test_path_traversal_blocked() {
+        let proto = Protocol::Http;
+        let port = 8082u16;
+        let file_in = "data.bin";
+        let file_out = "/tmp/data-out-http-traversal.bin";
+        let dl_cmd = format!("wget -t1 -T1 {}://127.0.0.1:{}/../../etc/passwd -O {} 2>&1 || true", 
+            proto.to_string(), port, file_out);
+
+        let result = test_server_e2e(proto, port, dl_cmd, file_in, file_out);
+        assert!(result.is_err(), "Expected failure for path traversal attempt");
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("empty") || err_msg.contains("does not exist"), 
+            "Expected empty file or non-existent error, got: {}", err_msg);
     }
 }

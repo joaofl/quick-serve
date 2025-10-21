@@ -41,7 +41,7 @@ impl eframe::App for UI {
             ctx.set_pixels_per_point(self.aspect_ratio);
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
 
-            egui::menu::bar(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 egui::ComboBox::from_label("")
                     .selected_text("Size")
                     .width(20.0)

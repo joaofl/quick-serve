@@ -2,6 +2,22 @@
 
 set -eu
 
+# Preflight checks: ensure Docker daemon and `cross` are available before starting
+if ! command -v docker >/dev/null 2>&1; then
+    echo "Docker is not installed or not in PATH. Please install Docker and try again."
+    exit 1
+fi
+
+if ! docker info >/dev/null 2>&1; then
+    echo "Docker daemon is not running or /var/run/docker.sock is not accessible. Start Docker and retry."
+    exit 1
+fi
+
+if ! command -v cross >/dev/null 2>&1; then
+    echo "'cross' is not installed or not in PATH. Install it with: cargo install cross"
+    exit 1
+fi
+
 # List of target platforms
 TARGETS=( \
 x86_64-unknown-linux-gnu        \
@@ -22,7 +38,8 @@ for target in "${TARGETS[@]}"; do
 done
 
 # Test natively
-cross test --release
+cargo build --release
+cargo test --release
 
 # Copy the compiled files
 for target in "${TARGETS[@]}"; do

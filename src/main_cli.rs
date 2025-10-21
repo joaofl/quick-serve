@@ -39,7 +39,7 @@ async fn main() {
     server_starter_receiver(&channel);
 
     ////////////////////////////////////////////////////////////////////////
-    setup_ctrlc_handler();
+    setup_ctrlc_handler(channel.sender.clone());
 
     ////////////////////////////////////////////////////////////////////////
     server_starter_sender(&cli_args, &channel);
