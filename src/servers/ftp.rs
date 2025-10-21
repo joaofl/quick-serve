@@ -11,39 +11,27 @@ use std::sync::Arc;
 
 
 pub trait FTPRunner {
-    fn new(path: PathBuf, bind_ip: String, port: u16) -> Self;
+    fn new(path: PathBuf, bind_ip: String, port: u16) -> Result<Self, crate::QuickServeError> where Self: Sized;
     fn runner(&self);
 }
 
 impl FTPRunner for Server {
-    fn new(path: PathBuf, bind_ip: String, port: u16) -> Self {
+    fn new(path: PathBuf, bind_ip: String, port: u16) -> Result<Self, crate::QuickServeError> {
         let mut s = Server::default();
 
         // Validate inputs with proper error handling
-        if let Err(e) = validation::validate_path(&path) {
-            error!("Invalid path '{}': {}", path.display(), e);
-            panic!("Invalid path: {}", e);
-        }
-        
-        if let Err(e) = validation::validate_ip_port(&bind_ip, port) {
-            error!("Invalid bind IP '{}:{}': {}", bind_ip, port, e);
-            panic!("Invalid bind IP: {}", e);
-        }
+        validation::validate_path(&path)?;
+        validation::validate_ip_port(&bind_ip, port)?;
 
         let path = validation::ensure_trailing_slash(&path);
         s.path = Arc::new(path);
-        s.bind_address = match IpAddr::from_str(&bind_ip) {
-            Ok(addr) => addr,
-            Err(e) => {
-                error!("Failed to parse IP address '{}': {}", bind_ip, e);
-                panic!("Invalid IP address: {}", e);
-            }
-        };
+        s.bind_address = IpAddr::from_str(&bind_ip)
+            .map_err(|e| crate::QuickServeError::validation(format!("Invalid IP address '{}': {}", bind_ip, e)))?;
         s.port = port;
 
         s.protocol = Protocol::Ftp;
         FTPRunner::runner(&s);
-        s
+        Ok(s)
     }
 
     fn runner(&self) {
