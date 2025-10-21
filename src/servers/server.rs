@@ -22,6 +22,7 @@ pub enum Protocol {
 pub const PROTOCOL_LIST: [&'static Protocol; 4] = [&Protocol::Http, &Protocol::Tftp, &Protocol::Ftp, &Protocol::Dhcp];
 
 impl Protocol {
+    /// Returns the protocol name as a string
     pub fn to_string(&self) -> &str {
         match self {
             Protocol::Dhcp => "dhcp",
@@ -30,6 +31,8 @@ impl Protocol {
             Protocol::Tftp => "tftp",
         }
     }
+    
+    /// Returns the default port for the protocol
     pub fn get_default_port(&self) -> u16 {
         match self {
             Protocol::Dhcp => 6767,
@@ -40,16 +43,24 @@ impl Protocol {
     }
 }
 
+/// Message used for internal server communication
 #[derive(Default, Clone, Debug)]
 pub struct Message {
+    /// Whether to connect (true) or disconnect (false)
     pub connect: bool,
 }
 
+/// Represents a server instance with its configuration
 pub struct Server {
+    /// Broadcast sender for control messages
     pub sender: broadcast::Sender<Message>,
+    /// The protocol this server handles
     pub protocol: Protocol,
+    /// Path to serve files from
     pub path: Arc<PathBuf>,
+    /// IP address to bind to
     pub bind_address: IpAddr,
+    /// Port to listen on
     pub port: u16
 }
 
@@ -66,6 +77,11 @@ impl Default for Server {
 }
 
 impl Server {
+    /// Starts the server by sending a connect message
+    ///
+    /// # Returns
+    /// * `Ok(())` if the message was sent successfully
+    /// * `Err(QuickServeError)` if sending the message failed
     pub fn start(&self) -> QuickServeResult<()> {
         info!("Starting {} server bind to {}:{}", self.protocol.to_string(), self.bind_address, self.port);
         info!("Serving {}", self.path.to_string_lossy());
@@ -76,6 +92,13 @@ impl Server {
         Ok(())
     }
 
+    /// Stops the server by sending disconnect messages
+    ///
+    /// Sends two disconnect messages to ensure both the inner loop and runner exit.
+    ///
+    /// # Returns
+    /// * `Ok(())` if the messages were sent successfully
+    /// * `Err(QuickServeError)` if sending messages failed
     pub fn stop(&self) -> QuickServeResult<()> {
         // Stop the serving loop to exit the application. 
         // Mostly required by the headless version (single sessions).
@@ -100,6 +123,13 @@ impl Server {
 
 
 
+/// Starts receiver tasks for all protocols
+///
+/// Spawns one async task per protocol that listens for start/stop commands
+/// and manages the lifecycle of each server.
+///
+/// # Arguments
+/// * `channel` - The broadcast channel for sending commands to servers
 pub fn server_starter_receiver(channel: &DefaultChannel<CommandMsg>) {
     ////////////////////////////////////////////////////////////////////////
     // Spawn one thread per protocol and start waiting for command
@@ -141,9 +171,9 @@ pub fn server_starter_receiver(channel: &DefaultChannel<CommandMsg>) {
                         }
                     };
 
-                    // Wait the receiver to listen before the sender sends the 1rst msg
-                    // TODO: use some flag instead
-                    sleep(Duration::from_millis(100)).await;
+                    // Small delay to ensure the server's internal receiver is ready
+                    // This is necessary because the server spawns async tasks that need to subscribe
+                    sleep(Duration::from_millis(10)).await;
                     
                     if let Err(e) = server.start() {
                         error!("Failed to start {} server: {}", msg.protocol.to_string(), e);
@@ -175,6 +205,15 @@ pub fn server_starter_receiver(channel: &DefaultChannel<CommandMsg>) {
 }
 
 
+/// Processes CLI arguments and sends start commands for requested servers
+///
+/// Validates the bind address and path, then sends start messages for each
+/// server protocol specified in the command-line arguments. Blocks indefinitely
+/// waiting for the Ctrl+C handler to terminate the process.
+///
+/// # Arguments
+/// * `cli_args` - Parsed command-line arguments
+/// * `channel` - The broadcast channel for sending commands to servers
 pub fn server_starter_sender(cli_args: &Cli, channel: &DefaultChannel<CommandMsg>) {
     // Read and validate the bind address
     let bind_ip = &cli_args.bind_ip;
@@ -232,10 +271,9 @@ pub fn server_starter_sender(cli_args: &Cli, channel: &DefaultChannel<CommandMsg
         exit(2);
     }
     else {
-        // TODO: make this a feature: run for N seconds and exit
-        // TODO: get some periodic stats as well
-        loop {
-            std::thread::sleep(Duration::from_secs(60));
-        }
+        // Wait indefinitely for signals (Ctrl+C handler will terminate the process)
+        // This is more efficient than busy-waiting with sleep
+        info!("All servers started. Waiting for shutdown signal...");
+        std::thread::park();
     }
 }
