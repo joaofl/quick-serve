@@ -57,9 +57,10 @@ pub mod tests {
         dl_cmd: String,
         file_in: &str,
         file_out: &str,
-    ) {
+    ) -> Result<bool, String> {
         // let file_name = "data.bin";
-        let dir_path = make_tmp(file_in).unwrap();
+        let dir_path = make_tmp(file_in)
+            .map_err(|e| format!("Failed to create temp directory: {}", e))?;
         let dir_path_c = dir_path.clone();
 
         let server = thread::spawn(move || {
@@ -88,40 +89,42 @@ pub mod tests {
         });
 
         let out_client = client.join();
-        assert!(out_client.is_ok(), "Download failed: {:?}", out_client);
+        if out_client.is_err() {
+            return Err(format!("Download failed: {:?}", out_client));
+        }
 
         // The result here is always an error as the server gets killed.
         let out_server = server.join();
-        assert!(
-            out_server.is_err(),
-            "Server exited gracefully while it should have not: {:?}",
-            out_server
-        );
+        if out_server.is_ok() {
+            return Err(format!(
+                "Server exited gracefully while it should have not: {:?}",
+                out_server
+            ));
+        }
 
         let file_in = dir_path_c.join(file_in);
-        assert!(
-            file_in.exists(),
-            "File {} does not exist!",
-            file_in.to_str().unwrap()
-        );
+        if !file_in.exists() {
+            return Err(format!("Source file {} does not exist!", file_in.to_str().unwrap()));
+        }
 
         let file_out = PathBuf::from(file_out);
-        assert!(
-            file_out.exists(),
-            "File {} does not exist!",
-            file_out.to_string_lossy()
-        );
-        assert!(
-            file_out.metadata().unwrap().len() > 0,
-            "File {} is empty!",
-            file_out.to_string_lossy()
-        );
+        if !file_out.exists() {
+            return Err(format!("Output file {} does not exist!", file_out.to_string_lossy()));
+        }
+        
+        let metadata = file_out.metadata()
+            .map_err(|e| format!("Failed to read metadata: {}", e))?;
+        if metadata.len() == 0 {
+            return Err(format!("File {} is empty!", file_out.to_string_lossy()));
+        }
 
-        let r = compare_files(&file_in, &PathBuf::from(file_out)).unwrap();
+        let files_match = compare_files(&file_in, &PathBuf::from(file_out))
+            .map_err(|e| format!("Failed to compare files: {}", e))?;
 
-        assert!(
-            r,
-            "Content of files served and downloaded are not the same!"
-        );
+        if !files_match {
+            return Err("Content of files served and downloaded are not the same!".to_string());
+        }
+
+        Ok(true)
     }
 }

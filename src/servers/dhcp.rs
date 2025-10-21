@@ -191,7 +191,7 @@ mod tests {
             let (out, _err) = run_command("quick-serve --dhcp=6767 -v --bind-ip=172.12.1.4", "dhcp_server: offered");
 
             let expected_lines = [
-                "DHCP server started",
+                "DHCP server serving on",
                 "dhcp_server: Request received",
                 "dhcp_server: offered",
             ];
