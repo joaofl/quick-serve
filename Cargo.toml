@@ -24,8 +24,8 @@ name = "quick-serve"
 path = "src/main_cli.rs"
 
 [dependencies]
-# TODO: Put only the used features
-tokio = { version = "1.48.0", features = ["full"]}
+# Tokio async runtime with only required features
+tokio = { version = "1.48.0", features = ["rt-multi-thread", "macros", "net", "sync", "time", "signal", "io-util", "fs"]}
 async-trait = "0.1.89"
 
 # FTP server deps
@@ -35,10 +35,10 @@ unftp-sbe-fs = "0.3.0"
 # TFTP server
 async-tftp = "0.3.6"
 
-# HTTP server deps: TODO: check whats needed
-hyper = { version = "1.7.0", features = ["full"] }
+# HTTP server deps
+hyper = { version = "1.7.0", features = ["server", "http1"] }
 http-body-util = "0.1.3"
-hyper-util = { version = "0.1.17", features = ["full"] }
+hyper-util = { version = "0.1.17", features = ["tokio", "server", "server-auto"] }
 bytes = "1.10.1"
 
 # DHCP server deps
