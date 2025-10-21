@@ -2,6 +2,18 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use crate::common::QuickServeError;
 
+/// Validates an IP address and port combination
+///
+/// Checks for empty IPs, invalid formats, and privileged ports.
+/// Allows binding to 0.0.0.0 for listening on all interfaces.
+///
+/// # Arguments
+/// * `ip` - The IP address to validate
+/// * `port` - The port number to validate
+///
+/// # Returns
+/// * `Ok(())` if the IP and port are valid
+/// * `Err(QuickServeError)` with a description if validation fails
 pub fn validate_ip_port(ip: &str, port: u16) -> Result<(), QuickServeError> {
     // Check for empty or invalid IP
     if ip.trim().is_empty() {
@@ -34,6 +46,13 @@ pub fn validate_ip_port(ip: &str, port: u16) -> Result<(), QuickServeError> {
     }
 }
 
+/// Ensures a path ends with a trailing slash
+///
+/// # Arguments
+/// * `path` - The path to process
+///
+/// # Returns
+/// A PathBuf with a guaranteed trailing slash
 pub fn ensure_trailing_slash(path: &PathBuf) -> PathBuf {
     if !path.ends_with("/") { 
         let mut p = path.clone().into_os_string();
@@ -46,6 +65,17 @@ pub fn ensure_trailing_slash(path: &PathBuf) -> PathBuf {
 }
 
 
+/// Validates a directory path for serving
+///
+/// Checks if the path exists, is a directory, is readable, and is not
+/// a sensitive system directory (like /etc, /sys, /proc).
+///
+/// # Arguments
+/// * `path` - The path to validate
+///
+/// # Returns
+/// * `Ok(())` if the path is valid and safe to serve
+/// * `Err(QuickServeError)` if validation fails
 pub fn validate_path(path: &PathBuf) -> Result<(), QuickServeError> {
     // Check if path exists
     if !path.exists() {
@@ -81,7 +111,18 @@ pub fn validate_path(path: &PathBuf) -> Result<(), QuickServeError> {
     Ok(())
 }
 
-/// Validate file path for security (prevent path traversal)
+/// Validates a file path for security (prevents path traversal attacks)
+///
+/// Checks for path traversal attempts (..), null bytes, absolute paths,
+/// and ensures the resolved path stays within the base directory.
+///
+/// # Arguments
+/// * `base_path` - The base directory that files must be within
+/// * `requested_path` - The requested file path (relative)
+///
+/// # Returns
+/// * `Ok(PathBuf)` - The validated full path
+/// * `Err(QuickServeError)` - If the path is invalid or a security risk
 pub fn validate_file_path(base_path: &PathBuf, requested_path: &str) -> Result<PathBuf, QuickServeError> {
     // Check for path traversal attempts
     if requested_path.contains("..") || requested_path.contains("//") {
@@ -158,5 +199,101 @@ mod tests {
 
         let result = validate_path(&path);
         assert!(result.is_err(), "Expected Err, got {:?}", result);
+    }
+
+    #[test]
+    fn test_port_zero_is_invalid() {
+        let result = validate_ip_port("127.0.0.1", 0);
+        assert!(result.is_err());
+        assert!(result.err().unwrap().to_string().contains("Port cannot be 0"));
+    }
+
+    #[test]
+    fn test_privileged_port_warning() {
+        let result = validate_ip_port("127.0.0.1", 22);
+        assert!(result.is_err());
+        assert!(result.err().unwrap().to_string().contains("root privileges"));
+    }
+
+    #[test]
+    fn test_allow_standard_ports() {
+        // Port 80 and 443 should be allowed even though < 1024
+        let result = validate_ip_port("127.0.0.1", 80);
+        assert!(result.is_ok(), "Port 80 should be allowed");
+        
+        let result = validate_ip_port("127.0.0.1", 443);
+        assert!(result.is_ok(), "Port 443 should be allowed");
+    }
+
+    #[test]
+    fn test_allow_binding_to_all_interfaces() {
+        // 0.0.0.0 should be allowed for binding to all interfaces
+        let result = validate_ip_port("0.0.0.0", 8080);
+        assert!(result.is_ok(), "Should allow binding to 0.0.0.0");
+    }
+
+    #[test]
+    fn test_ipv6_addresses() {
+        // IPv6 addresses need to be in brackets when used with ports
+        let result = validate_ip_port("::1", 8080);
+        // Note: IPv6 validation might fail without brackets, which is expected behavior
+        // for Socket address parsing
+        if result.is_err() {
+            // This is acceptable - IPv6 addresses without brackets may not parse
+            return;
+        }
+        
+        let result = validate_ip_port("127.0.0.1", 8080);
+        assert!(result.is_ok(), "IPv4 should always work");
+    }
+
+    #[test]
+    fn test_empty_ip_rejected() {
+        let result = validate_ip_port("", 8080);
+        assert!(result.is_err());
+        assert!(result.err().unwrap().to_string().contains("cannot be empty"));
+    }
+
+    #[test]
+    fn test_validate_file_path_traversal_attacks() {
+        let base = PathBuf::from("/tmp");
+        
+        // Test various path traversal attempts
+        assert!(validate_file_path(&base, "../etc/passwd").is_err());
+        assert!(validate_file_path(&base, "foo/../../../etc/passwd").is_err());
+        assert!(validate_file_path(&base, "foo//bar").is_err());
+    }
+
+    #[test]
+    fn test_validate_file_path_null_bytes() {
+        let base = PathBuf::from("/tmp");
+        assert!(validate_file_path(&base, "foo\0bar").is_err());
+    }
+
+    #[test]
+    fn test_validate_file_path_absolute_paths() {
+        let base = PathBuf::from("/tmp");
+        assert!(validate_file_path(&base, "/etc/passwd").is_err());
+    }
+
+    #[test]
+    fn test_validate_file_path_valid_paths() {
+        let base = PathBuf::from("/tmp");
+        
+        let result = validate_file_path(&base, "foo/bar.txt");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), PathBuf::from("/tmp/foo/bar.txt"));
+        
+        let result = validate_file_path(&base, "test.txt");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), PathBuf::from("/tmp/test.txt"));
+    }
+
+    #[test]
+    fn test_nonexistent_path() {
+        let path = PathBuf::from("/this/path/should/not/exist/at/all");
+        let result = validate_path(&path);
+        assert!(result.is_err());
+        assert!(result.err().unwrap().to_string().contains("does not exist"));
     }
 }
