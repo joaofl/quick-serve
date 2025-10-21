@@ -10,7 +10,7 @@ use std::net::IpAddr;
 use crate::{Cli, CommandMsg, DefaultChannel, FTPRunner, HTTPRunner, TFTPRunner, DHCPRunner, QuickServeError, QuickServeResult};
 
 
-#[derive(Debug, Default, PartialEq, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Hash, Clone)]
 pub enum Protocol {
     Dhcp,
     Ftp,

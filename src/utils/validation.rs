@@ -8,10 +8,8 @@ pub fn validate_ip_port(ip: &str, port: u16) -> Result<(), QuickServeError> {
         return Err(QuickServeError::validation("IP address cannot be empty"));
     }
 
-    // Check for reserved/private IP ranges (optional security check)
-    if ip == "0.0.0.0" {
-        return Err(QuickServeError::validation("Binding to 0.0.0.0 is not allowed for security reasons"));
-    }
+    // Allow 0.0.0.0 for binding to all interfaces (this is standard practice)
+    // Other validation will be done by parsing
 
     // Check port range
     if port == 0 {
