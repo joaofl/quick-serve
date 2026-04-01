@@ -7,9 +7,7 @@ use crate::{DefaultChannel, PROTOCOL_LIST};
 
 use crate::messages::CommandMsg;
 
-#[derive(Default)]
 pub struct UI {
-    aspect_ratio: f32,
     protocols: Vec<CommandMsg>,
     bind_ip: String,
     path: String,
@@ -20,12 +18,12 @@ pub struct UI {
 
 impl UI {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-
         let mut s = UI {
-            aspect_ratio: 1.8,
+            protocols: Vec::new(),
             bind_ip: "127.0.0.1".into(),
             path: "/tmp/".into(),
-            ..Default::default()
+            channel: Default::default(),
+            logs: Default::default(),
         };
         for protocol in PROTOCOL_LIST {
             s.protocols.push(CommandMsg::new(protocol));
@@ -36,37 +34,43 @@ impl UI {
 
 impl eframe::App for UI {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        ui.ctx().set_pixels_per_point(self.aspect_ratio);
         ui.ctx().request_repaint_after(std::time::Duration::from_millis(100));
 
         egui::CentralPanel::default().show_inside(ui, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
-                egui::ComboBox::from_label("")
-                    .selected_text("Size")
-                    .width(20.0)
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut self.aspect_ratio, 2.0, "L");
-                        ui.selectable_value(&mut self.aspect_ratio, 1.5, "M");
-                        ui.selectable_value(&mut self.aspect_ratio, 1.0, "S");
+                ui.menu_button("File", |ui| {
+                    if ui.button("Exit").clicked() {
+                        std::process::exit(0);
+                    }
+                });
+
+                ui.menu_button("View", |ui| {
+                    let zoom = ui.ctx().zoom_factor();
+                    ui.horizontal(|ui| {
+                        if ui.button("−").clicked() {
+                            ui.ctx().set_zoom_factor((zoom - 0.1).max(0.5));
+                            ui.close();
+                        }
+                        ui.label(format!("{:.0}%", zoom * 100.0));
+                        if ui.button("+").clicked() {
+                            ui.ctx().set_zoom_factor((zoom + 0.1).min(2.0));
+                            ui.close();
+                        }
                     });
 
-                {
+                    ui.separator();
+
                     let theme = ui.ctx().theme();
-                    let icon = if theme == egui::Theme::Dark { "☀" } else { "🌙" };
-                    if ui.button(icon).clicked() {
+                    let label = if theme == egui::Theme::Dark { "☀  Light mode" } else { "🌙  Dark mode" };
+                    if ui.button(label).clicked() {
                         ui.ctx().set_theme(if theme == egui::Theme::Dark {
                             egui::Theme::Light
                         } else {
                             egui::Theme::Dark
                         });
+                        ui.close();
                     }
-                }
-
-                ui.separator();
-                if ui.button("Exit").clicked() {
-                    std::process::exit(0);
-                };
-                ui.separator();
+                });
             });
 
             // #######################################################################
