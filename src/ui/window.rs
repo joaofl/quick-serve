@@ -35,11 +35,9 @@ impl UI {
 }
 
 impl eframe::App for UI {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-
-            ctx.set_pixels_per_point(self.aspect_ratio);
-            ctx.request_repaint_after(std::time::Duration::from_millis(100));
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        ui.ctx().set_pixels_per_point(self.aspect_ratio);
+        ui.ctx().request_repaint_after(std::time::Duration::from_millis(100));
 
             egui::MenuBar::new().ui(ui, |ui| {
                 egui::ComboBox::from_label("")
@@ -138,7 +136,6 @@ impl eframe::App for UI {
                         ui.label( egui::RichText::new(&logs[row]).text_style(text_style.clone()) );
                     }
                 });
-        });
 
     }
 }

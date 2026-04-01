@@ -2,7 +2,7 @@ use std::net::IpAddr;
 use std::path::PathBuf;
 use std::str::FromStr;
 use log::{debug, info, error};
-use unftp_sbe_fs::ServerExt;
+use unftp_sbe_fs::Filesystem;
 use std::time::Duration;
 use super::Server;
 use crate::servers::Protocol;
@@ -58,7 +58,10 @@ impl FTPRunner for Server {
                     info!("Starting FTP server on {}:{}", bind_address, port);
                     
                     // Define new server with proper error handling
-                    let server_result = libunftp::Server::with_fs(path.clone())
+                    let path_for_factory = path.clone();
+                    let server_result = libunftp::ServerBuilder::new(Box::new(move || {
+                        Filesystem::new(&path_for_factory).expect("Failed to create FTP filesystem backend")
+                    }))
                         .passive_ports(50000..=65535)
                         .metrics()
                         .shutdown_indicator(async move {
