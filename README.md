@@ -137,4 +137,4 @@ cargo test
 
 ## TODO
 - [x] Fix excessive CPU usage when using the UI
-- [ ] Refine on each protocol's specific logs
+- [x] Refine on each protocol's specific logs
