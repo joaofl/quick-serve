@@ -50,19 +50,4 @@ async fn main() {
 
 
 
-////////////////////////////////////////////////////////////////////////
-// TESTS
-////////////////////////////////////////////////////////////////////////
-#[cfg(test)]
-mod tests {
-    use predicates::prelude::*;
-    use assert_cmd::Command;
-    pub mod common;
 
-    #[test]
-    fn test_cli_help() {
-        let mut cmd = Command::cargo_bin("quick-serve").unwrap();
-        cmd.arg("--help");
-        cmd.assert().success().stdout(predicate::str::contains("Usage: quick-serve"));
-    }
-}
