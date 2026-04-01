@@ -39,6 +39,7 @@ impl eframe::App for UI {
         ui.ctx().set_pixels_per_point(self.aspect_ratio);
         ui.ctx().request_repaint_after(std::time::Duration::from_millis(100));
 
+        egui::CentralPanel::default().show_inside(ui, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
                 egui::ComboBox::from_label("")
                     .selected_text("Size")
@@ -49,13 +50,23 @@ impl eframe::App for UI {
                         ui.selectable_value(&mut self.aspect_ratio, 1.0, "S");
                     });
 
-                    egui::widgets::global_theme_preference_switch(ui);
+                {
+                    let theme = ui.ctx().theme();
+                    let icon = if theme == egui::Theme::Dark { "☀" } else { "🌙" };
+                    if ui.button(icon).clicked() {
+                        ui.ctx().set_theme(if theme == egui::Theme::Dark {
+                            egui::Theme::Light
+                        } else {
+                            egui::Theme::Dark
+                        });
+                    }
+                }
 
-                    ui.separator();
-                    if ui.button("Exit").clicked() {
-                        std::process::exit(0);
-                    };
-                    ui.separator();
+                ui.separator();
+                if ui.button("Exit").clicked() {
+                    std::process::exit(0);
+                };
+                ui.separator();
             });
 
             // #######################################################################
@@ -136,6 +147,6 @@ impl eframe::App for UI {
                         ui.label( egui::RichText::new(&logs[row]).text_style(text_style.clone()) );
                     }
                 });
-
+        }); // CentralPanel
     }
 }
