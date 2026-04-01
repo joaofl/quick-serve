@@ -277,3 +277,158 @@ pub fn server_starter_sender(cli_args: &Cli, channel: &DefaultChannel<CommandMsg
         std::thread::park();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_protocol_to_string() {
+        assert_eq!(Protocol::Http.to_string(), "http");
+        assert_eq!(Protocol::Ftp.to_string(), "ftp");
+        assert_eq!(Protocol::Tftp.to_string(), "tftp");
+        assert_eq!(Protocol::Dhcp.to_string(), "dhcp");
+    }
+
+    #[test]
+    fn test_protocol_default_ports() {
+        assert_eq!(Protocol::Http.get_default_port(), 8080);
+        assert_eq!(Protocol::Ftp.get_default_port(), 2121);
+        assert_eq!(Protocol::Tftp.get_default_port(), 6969);
+        assert_eq!(Protocol::Dhcp.get_default_port(), 6767);
+    }
+
+    #[test]
+    fn test_protocol_default_is_http() {
+        assert_eq!(Protocol::default(), Protocol::Http);
+    }
+
+    #[test]
+    fn test_protocol_clone_and_eq() {
+        for proto in &[Protocol::Http, Protocol::Ftp, Protocol::Tftp, Protocol::Dhcp] {
+            let cloned = proto.clone();
+            assert_eq!(proto, &cloned);
+        }
+        assert_ne!(Protocol::Http, Protocol::Ftp);
+        assert_ne!(Protocol::Tftp, Protocol::Dhcp);
+    }
+
+    #[test]
+    fn test_protocol_list_is_complete() {
+        // Every variant should appear exactly once in PROTOCOL_LIST
+        let all = [Protocol::Http, Protocol::Ftp, Protocol::Tftp, Protocol::Dhcp];
+        for variant in &all {
+            assert!(
+                PROTOCOL_LIST.iter().any(|p| *p == variant),
+                "Protocol {:?} missing from PROTOCOL_LIST", variant
+            );
+        }
+        assert_eq!(PROTOCOL_LIST.len(), all.len());
+    }
+
+    #[test]
+    fn test_protocol_to_string_is_lowercase_ascii() {
+        for proto in PROTOCOL_LIST {
+            let s = proto.to_string();
+            assert!(s.chars().all(|c| c.is_ascii_lowercase()),
+                "Protocol string '{}' should be lowercase ASCII", s);
+            assert!(!s.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_protocol_default_ports_are_nonzero() {
+        for proto in PROTOCOL_LIST {
+            assert!(proto.get_default_port() > 0,
+                "Protocol {} has port 0", proto.to_string());
+        }
+    }
+
+    // ── Server::start / Server::stop messaging ────────────────────────────────
+
+    #[test]
+    fn test_start_sends_connect_true() {
+        let server = Server::default();
+        let mut rx = server.sender.subscribe();
+
+        server.start().expect("start should succeed");
+
+        let msg = rx.try_recv().expect("should have received a message after start");
+        assert!(msg.connect, "start() should send connect=true");
+    }
+
+    #[test]
+    fn test_stop_sends_two_connect_false_messages() {
+        let server = Server::default();
+        let mut rx = server.sender.subscribe();
+
+        server.stop().expect("stop should succeed");
+
+        let msg1 = rx.try_recv().expect("should have received first stop message");
+        let msg2 = rx.try_recv().expect("should have received second stop message");
+        assert!(!msg1.connect, "first stop message should have connect=false");
+        assert!(!msg2.connect, "second stop message should have connect=false");
+        assert!(rx.try_recv().is_err(), "stop() should send exactly 2 messages");
+    }
+
+    #[test]
+    fn test_start_then_stop_message_sequence() {
+        let server = Server::default();
+        let mut rx = server.sender.subscribe();
+
+        server.start().unwrap();
+        server.stop().unwrap();
+
+        let msgs: Vec<_> = (0..3).filter_map(|_| rx.try_recv().ok()).collect();
+        assert_eq!(msgs.len(), 3, "expected 1 start + 2 stop messages");
+        assert!(msgs[0].connect,  "first message should be connect=true (start)");
+        assert!(!msgs[1].connect, "second message should be connect=false (stop 1)");
+        assert!(!msgs[2].connect, "third message should be connect=false (stop 2)");
+    }
+
+    #[test]
+    fn test_start_fails_without_receiver() {
+        // A sender with no active subscribers returns an error on send.
+        let (tx, _rx) = broadcast::channel::<Message>(10);
+        // Drop _rx immediately so there are no subscribers
+        drop(_rx);
+
+        let server = Server {
+            sender: tx,
+            ..Server::default()
+        };
+
+        let result = server.start();
+        assert!(result.is_err(), "start() with no receivers should fail");
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("Error sending start message"), "unexpected error: {}", err);
+    }
+
+    #[test]
+    fn test_stop_fails_without_receiver() {
+        let (tx, _rx) = broadcast::channel::<Message>(10);
+        drop(_rx);
+
+        let server = Server {
+            sender: tx,
+            ..Server::default()
+        };
+
+        let result = server.stop();
+        assert!(result.is_err(), "stop() with no receivers should fail");
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("Error sending first stop message"), "unexpected error: {}", err);
+    }
+
+    #[test]
+    fn test_multiple_subscribers_all_receive_start() {
+        let server = Server::default();
+        let mut rx1 = server.sender.subscribe();
+        let mut rx2 = server.sender.subscribe();
+
+        server.start().unwrap();
+
+        assert!(rx1.try_recv().expect("rx1 should receive").connect);
+        assert!(rx2.try_recv().expect("rx2 should receive").connect);
+    }
+}
