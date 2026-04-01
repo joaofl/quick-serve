@@ -37,16 +37,11 @@ pub mod tests {
     }
 
     pub fn compare_files(f1: &PathBuf, f2: &PathBuf) -> io::Result<bool> {
-        let mut file1 = fs::File::open(&f1)?;
-        let mut file2 = fs::File::open(&f2)?;
+        let data1 = fs::read(f1)?;
+        let data2 = fs::read(f2)?;
 
-        let mut hasher = Sha256::new();
-        let _ = io::copy(&mut file1, &mut hasher)?;
-        let h1 = hasher.finalize();
-
-        let mut hasher = Sha256::new();
-        let _ = io::copy(&mut file2, &mut hasher)?;
-        let h2 = hasher.finalize();
+        let h1 = Sha256::digest(&data1);
+        let h2 = Sha256::digest(&data2);
 
         Ok(h1 == h2)
     }
