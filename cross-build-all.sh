@@ -28,23 +28,25 @@ arm-unknown-linux-gnueabihf     \
 )
 
 rm -rf target/assets
-mkdir -p target/assets 2>/dev/null || true
+mkdir -p target/assets
 
 # Cross-compile for each target platform
 for target in "${TARGETS[@]}"; do
     echo; echo "########################################################################################";
-    echo "Cross-compiling gui version for $target..."; echo
+    echo "Cross-compiling for $target..."; echo
     cross build --release --target "$target"
 done
 
-# Test natively
-cargo build --release
-cargo test --release
+# Run tests inside the cross container so all protocol clients (tftp, wget, curl)
+# are available via the pre-build step in Cross.toml.
+echo; echo "########################################################################################"
+echo "Running tests..."; echo
+cross test
 
 # Copy the compiled files
 for target in "${TARGETS[@]}"; do
     ext=""
-    if [ $target = "x86_64-pc-windows-gnu" ]; then
+    if [[ "$target" == "x86_64-pc-windows-gnu" ]]; then
         ext=".exe"
     fi
 
