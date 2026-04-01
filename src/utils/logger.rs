@@ -30,23 +30,26 @@ impl Log for MyLogger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let log_line = format!(
-                "[{}] {}: {}",
-                record.level(),
-                record.target(),
-                record.args()
-            );
+            println!("[{}] {}: {}", record.level(), record.target(), record.args());
 
-            println!("{}", log_line);
-            
-            // Add log rotation to prevent memory leaks
-            if let Ok(mut logs) = self.logs.lock() {
-                logs.push(log_line);
-                
-                // If we exceed the maximum number of logs, remove the oldest ones
-                if logs.len() > self.max_logs {
-                    let excess = logs.len() - self.max_logs;
-                    logs.drain(0..excess);
+            // Only push logs from internal components to the UI
+            if record.target().starts_with("quick_serve") {
+                let ui_icon = match record.level() {
+                    log::Level::Error => "❌",
+                    log::Level::Warn  => "⚠",
+                    log::Level::Info  => "ℹ",
+                    log::Level::Debug => "?",
+                    log::Level::Trace => "~",
+                };
+                let ui_line = format!("{} {}", ui_icon, record.args());
+
+                if let Ok(mut logs) = self.logs.lock() {
+                    logs.push(ui_line);
+
+                    if logs.len() > self.max_logs {
+                        let excess = logs.len() - self.max_logs;
+                        logs.drain(0..excess);
+                    }
                 }
             }
         }
