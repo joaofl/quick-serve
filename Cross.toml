@@ -1,5 +1,4 @@
 [build]
-xargo = false                                   # enable the use of xargo by default
 zig = false                                   # enable the use of xargo by default
 default-target = "x86_64-unknown-linux-gnu"    # use this target if none is explicitly provided
 pre-build = [                                  # additional commands to run prior to building the package
